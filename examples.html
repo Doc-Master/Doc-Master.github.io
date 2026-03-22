@@ -3,510 +3,485 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DocMaster &mdash; Examples</title>
+    <title>DocMaster &mdash; Use Cases</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+    /* ── Use-case page overrides ── */
+    .uc-hero { padding: 100px 0 48px; text-align: center; }
+    .uc-hero h1 { font-size: 2rem; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+    .uc-hero p  { font-size: 1.05rem; color: var(--text-secondary); max-width: 640px; margin: 0 auto; line-height: 1.6; }
+
+    /* Domain tabs */
+    .uc-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 36px; flex-wrap: wrap; }
+    .uc-tab {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 10px 20px; border-radius: 6px; border: 1px solid var(--border);
+        background: var(--white); color: var(--text-secondary); font-size: 0.88rem; font-weight: 500;
+        cursor: pointer; transition: all 0.2s;
+    }
+    .uc-tab:hover { border-color: var(--primary); color: var(--primary); }
+    .uc-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .uc-tab .uc-tab-domain {
+        font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+        opacity: 0.7;
+    }
+    .uc-tab.active .uc-tab-domain { opacity: 0.9; }
+
+    /* Panel container */
+    .uc-panel { display: none; }
+    .uc-panel.active { display: block; animation: ucFadeIn 0.4s ease; }
+    @keyframes ucFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Metadata strip */
+    .uc-meta {
+        display: flex; gap: 24px; align-items: center; justify-content: center;
+        padding: 14px 0; margin-bottom: 32px;
+        border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+        font-size: 0.84rem; color: var(--text-secondary);
+    }
+    .uc-meta-item { display: flex; align-items: center; gap: 6px; }
+    .uc-meta-item strong { color: var(--text); font-weight: 600; }
+
+    /* Two-column layout: Filter | Q&A */
+    .uc-columns {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 28px;
+        align-items: start;
+    }
+    @media (max-width: 840px) { .uc-columns { grid-template-columns: 1fr; } }
+
+    .uc-col {
+        background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg);
+        padding: 24px; position: relative;
+        opacity: 0; transform: translateY(12px);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .uc-col.visible { opacity: 1; transform: translateY(0); }
+    .uc-col-label {
+        font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+        color: var(--primary); margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+    }
+    .uc-col-label svg { opacity: 0.7; }
+
+    /* Filter input mock */
+    .uc-query-box {
+        background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+        padding: 12px 14px; font-size: 0.88rem; color: var(--text); min-height: 44px;
+        line-height: 1.5; margin-bottom: 18px; position: relative;
+    }
+    .uc-query-box.typing::after {
+        content: '|'; animation: blink 0.7s step-end infinite; color: var(--primary); font-weight: 300;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* Strategy results row */
+    .uc-strat-row {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;
+    }
+    .uc-strat-card {
+        text-align: center; padding: 12px 8px; border-radius: var(--radius);
+        background: var(--bg); border: 1px solid var(--border-light);
+        opacity: 0; transform: scale(0.95);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .uc-strat-card.visible { opacity: 1; transform: scale(1); }
+    .uc-strat-card .uc-strat-name {
+        font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+        margin-bottom: 4px;
+    }
+    .uc-strat-card.tree .uc-strat-name { color: var(--primary); }
+    .uc-strat-card.hyper .uc-strat-name { color: var(--accent); }
+    .uc-strat-card.combined .uc-strat-name { color: #7c3aed; }
+    .uc-strat-card .uc-strat-val {
+        font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1;
+    }
+    .uc-strat-card .uc-strat-sub {
+        font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;
+    }
+
+    /* Document list */
+    .uc-doc-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .uc-doc {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 12px; border-radius: 6px; font-size: 0.82rem;
+        opacity: 0; transform: translateX(-8px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .uc-doc.visible { opacity: 1; transform: translateX(0); }
+    .uc-doc.match { background: var(--success-bg); border: 1px solid #a7f3d0; }
+    .uc-doc.miss  { background: var(--bg); border: 1px solid var(--border-light); opacity: 0.5; }
+    .uc-doc-name { font-weight: 500; color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.78rem; }
+    .uc-doc-badges { display: flex; gap: 4px; }
+    .uc-badge {
+        font-size: 0.66rem; font-weight: 600; padding: 2px 6px; border-radius: 4px;
+        text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .uc-badge.t-y { background: #dbeafe; color: var(--primary); }
+    .uc-badge.t-n { background: var(--bg); color: var(--text-muted); }
+    .uc-badge.h-y { background: #cffafe; color: #0e7490; }
+    .uc-badge.h-n { background: var(--bg); color: var(--text-muted); }
+    .uc-badge.c-y { background: #ede9fe; color: #7c3aed; }
+    .uc-badge.c-n { background: var(--bg); color: var(--text-muted); }
+    .uc-doc-more {
+        font-size: 0.78rem; color: var(--text-muted); padding: 4px 12px; font-style: italic;
+        opacity: 0; transition: opacity 0.3s ease;
+    }
+    .uc-doc-more.visible { opacity: 1; }
+
+    /* Observation callout */
+    .uc-obs {
+        font-size: 0.82rem; color: var(--text-secondary); line-height: 1.55;
+        padding: 10px 14px; background: #fffbeb; border-left: 3px solid #f59e0b;
+        border-radius: 0 6px 6px 0; margin-top: 4px;
+        opacity: 0; transition: opacity 0.4s ease;
+    }
+    .uc-obs.visible { opacity: 1; }
+    .uc-obs strong { color: var(--text); }
+
+    /* Q&A chat */
+    .uc-qa-thread { display: flex; flex-direction: column; gap: 12px; }
+    .uc-qa-msg {
+        opacity: 0; transform: translateY(6px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .uc-qa-msg.visible { opacity: 1; transform: translateY(0); }
+    .uc-qa-q {
+        background: var(--primary); color: #fff; padding: 10px 14px; border-radius: 10px 10px 2px 10px;
+        font-size: 0.88rem; line-height: 1.5; align-self: flex-end; max-width: 92%;
+    }
+    .uc-qa-a {
+        background: var(--bg); border: 1px solid var(--border); padding: 14px 16px;
+        border-radius: 2px 10px 10px 10px; font-size: 0.85rem; line-height: 1.6;
+        color: var(--text-secondary);
+    }
+    .uc-qa-a ul { margin: 8px 0 8px 16px; }
+    .uc-qa-a li { margin-bottom: 4px; }
+    .uc-qa-a strong { color: var(--text); }
+    .uc-qa-sources {
+        display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;
+        padding-top: 10px; border-top: 1px solid var(--border-light);
+    }
+    .uc-qa-src {
+        font-size: 0.72rem; background: var(--primary-light); color: var(--primary);
+        padding: 3px 8px; border-radius: 4px; font-weight: 500;
+    }
+
+    /* Replay button */
+    .uc-replay {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: 0.78rem; color: var(--text-muted); cursor: pointer;
+        background: none; border: 1px solid var(--border); border-radius: 5px;
+        padding: 5px 12px; transition: all 0.2s; margin-top: 20px;
+    }
+    .uc-replay:hover { color: var(--primary); border-color: var(--primary); }
+
+    /* CTA strip */
+    .uc-cta {
+        text-align: center; padding: 48px 0 56px; border-top: 1px solid var(--border);
+        margin-top: 48px;
+    }
+    .uc-cta h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+    .uc-cta p  { font-size: 0.92rem; color: var(--text-secondary); margin-bottom: 20px; }
+    </style>
 </head>
 <body data-page="examples">
 
     <nav id="main-nav"></nav>
 
-    <!-- Page Header -->
-    <section class="subpage-hero">
+    <!-- Header -->
+    <section class="uc-hero">
         <div class="container">
-            <div class="section-label">Interactive Examples</div>
-            <h1 class="subpage-title">See DocMaster in Action</h1>
-            <p class="subpage-desc">
-                Walk through real scenarios step by step. Watch the filter analyze documents,
-                see strategy results appear, and explore how RAG Q&amp;A delivers deep insights.
-            </p>
+            <h1>Representative Use Cases</h1>
+            <p>Three domain-specific scenarios demonstrating DocMaster's semantic filtering pipeline and structure-aware RAG over large document collections.</p>
         </div>
     </section>
 
-    <!-- Example Selector Tabs -->
-    <section class="section">
+    <!-- Content -->
+    <section class="section" style="padding-top: 0;">
         <div class="container">
-            <div class="section-header" style="margin-bottom: 24px;">
-                <div class="section-label">Choose a Scenario</div>
-                <h2 class="section-title">Example Walkthroughs</h2>
-            </div>
-            <div class="example-tabs">
-                <button class="example-tab active" onclick="showExample(0)">
-                    <span class="example-tab-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                    </span>
-                    Healthcare ML Papers
+
+            <!-- Domain Tabs -->
+            <div class="uc-tabs">
+                <button class="uc-tab active" onclick="showUC(0)">
+                    <span class="uc-tab-domain">Legal</span> Contract Risk Screening
                 </button>
-                <button class="example-tab" onclick="showExample(1)">
-                    <span class="example-tab-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2a10 10 0 0 1 0 20 10 10 0 0 1 0-20"/></svg>
-                    </span>
-                    Methodology Comparison
+                <button class="uc-tab" onclick="showUC(1)">
+                    <span class="uc-tab-domain">Finance</span> Earnings Risk Detection
                 </button>
-                <button class="example-tab" onclick="showExample(2)">
-                    <span class="example-tab-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
-                    </span>
-                    Privacy Regulations
+                <button class="uc-tab" onclick="showUC(2)">
+                    <span class="uc-tab-domain">Academic</span> Research Trend Mapping
                 </button>
             </div>
 
-            <!-- Example Panels -->
-            <div class="example-panels">
+            <!-- ═══════════════════════════════════════════════
+                 Use Case 1: Legal — Contract Risk Screening
+                 ═══════════════════════════════════════════════ -->
+            <div class="uc-panel active" id="uc-0">
+                <div class="uc-meta">
+                    <div class="uc-meta-item"><strong>Domain</strong> Legal</div>
+                    <div class="uc-meta-item"><strong>Corpus</strong> Employment agreements, NDAs, vendor contracts, SLAs</div>
+                    <div class="uc-meta-item"><strong>N</strong> 1,200</div>
+                    <div class="uc-meta-item"><strong>Expected output</strong> ~85 docs</div>
+                </div>
 
-                <!-- Example 1: Healthcare ML -->
-                <div class="example-panel active" id="example-0">
-                    <div class="example-scenario">
-                        <div class="example-scenario-header">
-                            <div class="example-tag">Document Filtering + RAG Q&amp;A</div>
-                            <h2>Find Machine Learning Papers in Healthcare</h2>
-                            <p class="example-scenario-desc">You have a collection of 8 academic papers. You want to find which ones discuss machine learning applications in healthcare, then ask detailed follow-up questions about them.</p>
+                <div class="uc-columns">
+                    <!-- Left: Semantic Filter -->
+                    <div class="uc-col" id="uc0-filter">
+                        <div class="uc-col-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                            Semantic Filter
+                        </div>
+                        <div class="uc-query-box" id="uc0-query" data-text="Find contracts with non-compete clauses longer than 12 months and jurisdiction outside California"></div>
+
+                        <div class="uc-strat-row" id="uc0-strats">
+                            <div class="uc-strat-card tree">
+                                <div class="uc-strat-name">Tree</div>
+                                <div class="uc-strat-val" data-target="62">0</div>
+                                <div class="uc-strat-sub">of 1,200</div>
+                            </div>
+                            <div class="uc-strat-card hyper">
+                                <div class="uc-strat-name">Hyperedge</div>
+                                <div class="uc-strat-val" data-target="85">0</div>
+                                <div class="uc-strat-sub">of 1,200</div>
+                            </div>
+                            <div class="uc-strat-card combined">
+                                <div class="uc-strat-name">Combined</div>
+                                <div class="uc-strat-val" data-target="85">0</div>
+                                <div class="uc-strat-sub">of 1,200</div>
+                            </div>
+                        </div>
+
+                        <div class="uc-doc-list" id="uc0-docs">
+                            <div class="uc-doc match"><span class="uc-doc-name">vendor_agreement_acme.pdf</span><div class="uc-doc-badges"><span class="uc-badge t-y">Tree</span><span class="uc-badge h-y">Hyper</span><span class="uc-badge c-y">Comb</span></div></div>
+                            <div class="uc-doc match"><span class="uc-doc-name">employment_nda_ny.pdf</span><div class="uc-doc-badges"><span class="uc-badge t-y">Tree</span><span class="uc-badge h-y">Hyper</span><span class="uc-badge c-y">Comb</span></div></div>
+                            <div class="uc-doc match"><span class="uc-doc-name">sla_contract_texas.pdf</span><div class="uc-doc-badges"><span class="uc-badge t-y">Tree</span><span class="uc-badge h-y">Hyper</span><span class="uc-badge c-y">Comb</span></div></div>
+                            <div class="uc-doc match"><span class="uc-doc-name">consulting_agreement_fl.pdf</span><div class="uc-doc-badges"><span class="uc-badge t-n">Tree</span><span class="uc-badge h-y">Hyper</span><span class="uc-badge c-y">Comb</span></div></div>
+                            <div class="uc-doc miss"><span class="uc-doc-name">employment_ca_standard.pdf</span><div class="uc-doc-badges"><span class="uc-badge t-n">Tree</span><span class="uc-badge h-n">Hyper</span><span class="uc-badge c-n">Comb</span></div></div>
+                        </div>
+                        <div class="uc-doc-more" id="uc0-more">+ 1,195 more documents</div>
+
+                        <div class="uc-obs" id="uc0-obs">
+                            <strong>Observation:</strong> Hyperedge captures <em>consulting_agreement_fl.pdf</em> missed by Tree traversal &mdash; the non-compete duration is in an appendix, not a top-level clause heading.
                         </div>
                     </div>
 
-                    <div class="example-panel-header">
-                        <span style="font-size:0.82em; color:var(--text-muted);">Watch the animated walkthrough below</span>
-                        <button class="replay-btn" onclick="replayAnimation(0)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-                            Replay animation
-                        </button>
-                    </div>
-
-                    <div class="example-flow" id="flow-0">
-                        <div class="example-flow-step">
-                            <div class="example-flow-badge">Step 1</div>
-                            <h3>Set Filter Condition</h3>
-                            <div class="example-input-mock">
-                                <div class="example-input-label">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                                    Filter Condition
-                                </div>
-                                <div class="example-input-text" data-full-text="&quot;This paper discusses machine learning applications in healthcare&quot;"></div>
-                                <button class="example-input-btn">Filter All Documents</button>
+                    <!-- Right: RAG Q&A -->
+                    <div class="uc-col" id="uc0-qa">
+                        <div class="uc-col-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            Follow-up Q&amp;A over 85 filtered documents
+                        </div>
+                        <div class="uc-qa-thread">
+                            <div class="uc-qa-msg" id="uc0-q">
+                                <div class="uc-qa-q">Summarize key risk patterns across these contracts.</div>
                             </div>
-                        </div>
-
-                        <div class="example-flow-arrow">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-                        </div>
-
-                        <div class="example-flow-step">
-                            <div class="example-flow-badge">Step 2</div>
-                            <h3>Review Filter Results</h3>
-                            <div class="example-results-mock">
-                                <div class="example-results-cards">
-                                    <div class="example-result-card tree">
-                                        <div class="example-result-card-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
-                                        </div>
-                                        <div class="example-result-card-label">Document Tree</div>
-                                        <div class="example-result-card-value" data-target="3">0</div>
-                                        <div class="example-result-card-sub">of 8 matched</div>
-                                    </div>
-                                    <div class="example-result-card hyperedge">
-                                        <div class="example-result-card-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2a10 10 0 0 1 0 20 10 10 0 0 1 0-20"/></svg>
-                                        </div>
-                                        <div class="example-result-card-label">Hyperedge</div>
-                                        <div class="example-result-card-value" data-target="4">0</div>
-                                        <div class="example-result-card-sub">of 8 matched</div>
-                                    </div>
-                                    <div class="example-result-card combined">
-                                        <div class="example-result-card-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                                        </div>
-                                        <div class="example-result-card-label">Combined</div>
-                                        <div class="example-result-card-value" data-target="3">0</div>
-                                        <div class="example-result-card-sub">of 8 matched</div>
-                                    </div>
-                                </div>
-                                <div class="example-doc-list">
-                                    <div class="example-doc-item match">
-                                        <span class="example-doc-name">ml_healthcare_survey.pdf</span>
-                                        <div class="example-doc-badges">
-                                            <span class="example-strat-badge tree-yes">Tree</span>
-                                            <span class="example-strat-badge hyper-yes">Hyper</span>
-                                            <span class="example-strat-badge combined-yes">Combined</span>
-                                        </div>
-                                    </div>
-                                    <div class="example-doc-item match">
-                                        <span class="example-doc-name">deep_learning_diagnosis.pdf</span>
-                                        <div class="example-doc-badges">
-                                            <span class="example-strat-badge tree-yes">Tree</span>
-                                            <span class="example-strat-badge hyper-yes">Hyper</span>
-                                            <span class="example-strat-badge combined-yes">Combined</span>
-                                        </div>
-                                    </div>
-                                    <div class="example-doc-item match">
-                                        <span class="example-doc-name">nlp_clinical_notes.pdf</span>
-                                        <div class="example-doc-badges">
-                                            <span class="example-strat-badge tree-yes">Tree</span>
-                                            <span class="example-strat-badge hyper-yes">Hyper</span>
-                                            <span class="example-strat-badge combined-yes">Combined</span>
-                                        </div>
-                                    </div>
-                                    <div class="example-doc-item match">
-                                        <span class="example-doc-name">federated_health_data.pdf</span>
-                                        <div class="example-doc-badges">
-                                            <span class="example-strat-badge tree-no">Tree</span>
-                                            <span class="example-strat-badge hyper-yes">Hyper</span>
-                                            <span class="example-strat-badge combined-no">Combined</span>
-                                        </div>
-                                    </div>
-                                    <div class="example-doc-item no-match">
-                                        <span class="example-doc-name">graph_neural_networks.pdf</span>
-                                        <div class="example-doc-badges">
-                                            <span class="example-strat-badge tree-no">Tree</span>
-                                            <span class="example-strat-badge hyper-no">Hyper</span>
-                                            <span class="example-strat-badge combined-no">Combined</span>
-                                        </div>
-                                    </div>
-                                    <div class="example-doc-item no-match collapsed">
-                                        <span class="example-doc-name">+ 3 more documents (no match)</span>
+                            <div class="uc-qa-msg" id="uc0-a">
+                                <div class="uc-qa-a">
+                                    Most contracts combine long non-compete durations (18&ndash;24 months) with employer-favorable jurisdictions (NY, TX). Key patterns:
+                                    <ul>
+                                        <li><strong>Broad scope</strong> &mdash; &ldquo;industry-wide&rdquo; restrictions rather than role-specific, increasing enforceability risk</li>
+                                        <li><strong>Extended duration</strong> &mdash; 60% specify 18+ month non-compete periods</li>
+                                        <li><strong>Jurisdiction stacking</strong> &mdash; multiple non-CA jurisdictions referenced to maximize enforceability</li>
+                                    </ul>
+                                    <div class="uc-qa-sources">
+                                        <span class="uc-qa-src">vendor_agreement_acme.pdf &sect;8.2</span>
+                                        <span class="uc-qa-src">employment_nda_ny.pdf Cl.12</span>
+                                        <span class="uc-qa-src">sla_contract_texas.pdf App.B</span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="example-insight">
-                                <strong>Insight:</strong> The Hyperedge strategy catches <em>federated_health_data.pdf</em> which the Document Tree missed &mdash; the paper discusses healthcare in its methodology section but never mentions it in top-level headings.
-                            </div>
-                        </div>
-
-                        <div class="example-flow-arrow">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-                        </div>
-
-                        <div class="example-flow-step">
-                            <div class="example-flow-badge">Step 3</div>
-                            <h3>Ask Follow-up Questions</h3>
-                            <div class="example-chat-mock">
-                                <div class="example-chat-scope">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                                    Querying: <strong>3 matched documents</strong>
-                                </div>
-                                <div class="example-chat-messages">
-                                    <div class="chat-preview-msg user">
-                                        <div class="chat-preview-bubble user">What evaluation metrics are used across the matched papers?</div>
-                                    </div>
-                                    <div class="chat-preview-msg assistant">
-                                        <div class="chat-preview-bubble assistant">
-                                            The matched papers use several evaluation metrics:
-                                            <ul>
-                                                <li><strong>Accuracy, F1 score, and AUC-ROC</strong> are the most common across all three papers</li>
-                                                <li>Two papers also report <strong>precision and recall</strong> separately for class-level analysis</li>
-                                                <li><em>nlp_clinical_notes.pdf</em> uniquely uses <strong>mean average precision (mAP)</strong> for retrieval evaluation</li>
-                                            </ul>
-                                            <div class="chat-preview-sources">
-                                                <div class="chat-preview-source">ml_healthcare_survey.pdf &mdash; Section 4.2</div>
-                                                <div class="chat-preview-source">deep_learning_diagnosis.pdf &mdash; Section 5.1</div>
-                                                <div class="chat-preview-source">nlp_clinical_notes.pdf &mdash; Table 3</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <a href="demo.html" class="try-it-badge">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                                Try this yourself in the live demo
-                            </a>
                         </div>
                     </div>
                 </div>
 
-                <!-- Example 2: Methodology Comparison -->
-                <div class="example-panel" id="example-1">
-                    <div class="example-scenario">
-                        <div class="example-scenario-header">
-                            <div class="example-tag">Relationship Query</div>
-                            <h2>Cross-Document Methodology Comparison</h2>
-                            <p class="example-scenario-desc">Find papers that explicitly compare transformer-based approaches with traditional methods. This type of query tests the system's ability to detect relationships distributed across multiple document sections.</p>
-                        </div>
-                    </div>
-
-                    <div class="example-panel-header">
-                        <span style="font-size:0.82em; color:var(--text-muted);">Watch the animated walkthrough below</span>
-                        <button class="replay-btn" onclick="replayAnimation(1)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-                            Replay animation
-                        </button>
-                    </div>
-
-                    <div class="example-flow" id="flow-1">
-                        <div class="example-flow-step">
-                            <div class="example-flow-badge">Step 1</div>
-                            <h3>Set Filter Condition</h3>
-                            <div class="example-input-mock">
-                                <div class="example-input-label">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                                    Filter Condition
-                                </div>
-                                <div class="example-input-text" data-full-text="&quot;This paper compares transformer-based and traditional methods&quot;"></div>
-                                <button class="example-input-btn">Filter All Documents</button>
-                            </div>
-                        </div>
-
-                        <div class="example-flow-arrow">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-                        </div>
-
-                        <div class="example-flow-step">
-                            <div class="example-flow-badge">Step 2</div>
-                            <h3>Review Filter Results</h3>
-                            <div class="example-results-mock">
-                                <div class="example-results-cards">
-                                    <div class="example-result-card tree">
-                                        <div class="example-result-card-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
-                                        </div>
-                                        <div class="example-result-card-label">Document Tree</div>
-                                        <div class="example-result-card-value" data-target="1">0</div>
-                                        <div class="example-result-card-sub">of 8 matched</div>
-                                    </div>
-                                    <div class="example-result-card hyperedge">
-                                        <div class="example-result-card-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2a10 10 0 0 1 0 20 10 10 0 0 1 0-20"/></svg>
-                                        </div>
-                                        <div class="example-result-card-label">Hyperedge</div>
-                                        <div class="example-result-card-value" data-target="3">0</div>
-                                        <div class="example-result-card-sub">of 8 matched</div>
-                                    </div>
-                                    <div class="example-result-card combined">
-                                        <div class="example-result-card-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                                        </div>
-                                        <div class="example-result-card-label">Combined</div>
-                                        <div class="example-result-card-value" data-target="2">0</div>
-                                        <div class="example-result-card-sub">of 8 matched</div>
-                                    </div>
-                                </div>
-                                <div class="example-doc-list">
-                                    <div class="example-doc-item match">
-                                        <span class="example-doc-name">transformer_vs_lstm.pdf</span>
-                                        <div class="example-doc-badges">
-                                            <span class="example-strat-badge tree-yes">Tree</span>
-                                            <span class="example-strat-badge hyper-yes">Hyper</span>
-                                            <span class="example-strat-badge combined-yes">Combined</span>
-                                        </div>
-                                    </div>
-                                    <div class="example-doc-item match">
-                                        <span class="example-doc-name">attention_mechanisms.pdf</span>
-                                        <div class="example-doc-badges">
-                                            <span class="example-strat-badge tree-no">Tree</span>
-                                            <span class="example-strat-badge hyper-yes">Hyper</span>
-                                            <span class="example-strat-badge combined-yes">Combined</span>
-                                        </div>
-                                    </div>
-                                    <div class="example-doc-item match">
-                                        <span class="example-doc-name">bert_fine_tuning.pdf</span>
-                                        <div class="example-doc-badges">
-                                            <span class="example-strat-badge tree-no">Tree</span>
-                                            <span class="example-strat-badge hyper-yes">Hyper</span>
-                                            <span class="example-strat-badge combined-no">Combined</span>
-                                        </div>
-                                    </div>
-                                    <div class="example-doc-item no-match collapsed">
-                                        <span class="example-doc-name">+ 5 more documents (no match)</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="example-insight">
-                                <strong>Insight:</strong> Hyperedge Search finds 3&times; more matches than Document Tree. The comparison between transformers and traditional methods is often spread across experiments and related work sections &mdash; hyperedges capture these cross-section relationships.
-                            </div>
-                        </div>
-
-                        <div class="example-flow-arrow">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-                        </div>
-
-                        <div class="example-flow-step">
-                            <div class="example-flow-badge">Step 3</div>
-                            <h3>Ask Follow-up Questions</h3>
-                            <div class="example-chat-mock">
-                                <div class="example-chat-scope">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                                    Querying: <strong>2 matched documents</strong>
-                                </div>
-                                <div class="example-chat-messages">
-                                    <div class="chat-preview-msg user">
-                                        <div class="chat-preview-bubble user">On which tasks do transformers outperform traditional methods?</div>
-                                    </div>
-                                    <div class="chat-preview-msg assistant">
-                                        <div class="chat-preview-bubble assistant">
-                                            Based on the matched papers, transformers consistently outperform traditional methods on:
-                                            <ul>
-                                                <li><strong>Sequence labeling</strong> &mdash; BERT-based models achieve 3-5% higher F1 than BiLSTM-CRF</li>
-                                                <li><strong>Document classification</strong> &mdash; Transformers show 8% accuracy improvement over SVM baselines</li>
-                                                <li><strong>Long-range dependencies</strong> &mdash; attention mechanisms capture context that RNNs miss</li>
-                                            </ul>
-                                            Traditional methods still win on <strong>low-resource settings</strong> where fine-tuning data is scarce.
-                                            <div class="chat-preview-sources">
-                                                <div class="chat-preview-source">transformer_vs_lstm.pdf &mdash; Table 2</div>
-                                                <div class="chat-preview-source">attention_mechanisms.pdf &mdash; Section 5.3</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <a href="demo.html" class="try-it-badge">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                                Try this yourself in the live demo
-                            </a>
-                        </div>
-                    </div>
+                <div style="text-align:center;">
+                    <button class="uc-replay" onclick="animateUC(0)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                        Replay
+                    </button>
                 </div>
-
-                <!-- Example 3: Privacy Regulations -->
-                <div class="example-panel" id="example-2">
-                    <div class="example-scenario">
-                        <div class="example-scenario-header">
-                            <div class="example-tag">Domain-Specific Filtering</div>
-                            <h2>Privacy Regulation Analysis</h2>
-                            <p class="example-scenario-desc">Search a collection of policy and legal documents to find those discussing EU privacy regulations. Then use Q&amp;A to extract specific compliance requirements.</p>
-                        </div>
-                    </div>
-
-                    <div class="example-panel-header">
-                        <span style="font-size:0.82em; color:var(--text-muted);">Watch the animated walkthrough below</span>
-                        <button class="replay-btn" onclick="replayAnimation(2)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-                            Replay animation
-                        </button>
-                    </div>
-
-                    <div class="example-flow" id="flow-2">
-                        <div class="example-flow-step">
-                            <div class="example-flow-badge">Step 1</div>
-                            <h3>Set Filter Condition</h3>
-                            <div class="example-input-mock">
-                                <div class="example-input-label">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                                    Filter Condition
-                                </div>
-                                <div class="example-input-text" data-full-text="&quot;This document discusses data privacy regulations in the European Union&quot;"></div>
-                                <button class="example-input-btn">Filter All Documents</button>
-                            </div>
-                        </div>
-
-                        <div class="example-flow-arrow">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-                        </div>
-
-                        <div class="example-flow-step">
-                            <div class="example-flow-badge">Step 2</div>
-                            <h3>Review Filter Results</h3>
-                            <div class="example-results-mock">
-                                <div class="example-results-cards">
-                                    <div class="example-result-card tree">
-                                        <div class="example-result-card-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
-                                        </div>
-                                        <div class="example-result-card-label">Document Tree</div>
-                                        <div class="example-result-card-value" data-target="2">0</div>
-                                        <div class="example-result-card-sub">of 6 matched</div>
-                                    </div>
-                                    <div class="example-result-card hyperedge">
-                                        <div class="example-result-card-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2a10 10 0 0 1 0 20 10 10 0 0 1 0-20"/></svg>
-                                        </div>
-                                        <div class="example-result-card-label">Hyperedge</div>
-                                        <div class="example-result-card-value" data-target="3">0</div>
-                                        <div class="example-result-card-sub">of 6 matched</div>
-                                    </div>
-                                    <div class="example-result-card combined">
-                                        <div class="example-result-card-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                                        </div>
-                                        <div class="example-result-card-label">Combined</div>
-                                        <div class="example-result-card-value" data-target="2">0</div>
-                                        <div class="example-result-card-sub">of 6 matched</div>
-                                    </div>
-                                </div>
-                                <div class="example-doc-list">
-                                    <div class="example-doc-item match">
-                                        <span class="example-doc-name">gdpr_compliance_guide.pdf</span>
-                                        <div class="example-doc-badges">
-                                            <span class="example-strat-badge tree-yes">Tree</span>
-                                            <span class="example-strat-badge hyper-yes">Hyper</span>
-                                            <span class="example-strat-badge combined-yes">Combined</span>
-                                        </div>
-                                    </div>
-                                    <div class="example-doc-item match">
-                                        <span class="example-doc-name">eu_data_act_2024.pdf</span>
-                                        <div class="example-doc-badges">
-                                            <span class="example-strat-badge tree-yes">Tree</span>
-                                            <span class="example-strat-badge hyper-yes">Hyper</span>
-                                            <span class="example-strat-badge combined-yes">Combined</span>
-                                        </div>
-                                    </div>
-                                    <div class="example-doc-item match">
-                                        <span class="example-doc-name">cross_border_transfers.pdf</span>
-                                        <div class="example-doc-badges">
-                                            <span class="example-strat-badge tree-no">Tree</span>
-                                            <span class="example-strat-badge hyper-yes">Hyper</span>
-                                            <span class="example-strat-badge combined-no">Combined</span>
-                                        </div>
-                                    </div>
-                                    <div class="example-doc-item no-match collapsed">
-                                        <span class="example-doc-name">+ 3 more documents (no match)</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="example-insight">
-                                <strong>Insight:</strong> The Document Tree quickly identifies documents with &ldquo;GDPR&rdquo; and &ldquo;EU&rdquo; in their titles and headings. The Hyperedge strategy additionally catches <em>cross_border_transfers.pdf</em> which references EU regulations in its analysis sections.
-                            </div>
-                        </div>
-
-                        <div class="example-flow-arrow">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-                        </div>
-
-                        <div class="example-flow-step">
-                            <div class="example-flow-badge">Step 3</div>
-                            <h3>Ask Follow-up Questions</h3>
-                            <div class="example-chat-mock">
-                                <div class="example-chat-scope">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                                    Querying: <strong>2 matched documents</strong>
-                                </div>
-                                <div class="example-chat-messages">
-                                    <div class="chat-preview-msg user">
-                                        <div class="chat-preview-bubble user">What are the key data subject rights under GDPR?</div>
-                                    </div>
-                                    <div class="chat-preview-msg assistant">
-                                        <div class="chat-preview-bubble assistant">
-                                            According to the matched documents, GDPR establishes these key data subject rights:
-                                            <ul>
-                                                <li><strong>Right to access</strong> &mdash; individuals can request copies of their personal data</li>
-                                                <li><strong>Right to erasure</strong> (&ldquo;right to be forgotten&rdquo;) &mdash; request deletion of personal data</li>
-                                                <li><strong>Right to portability</strong> &mdash; receive data in a machine-readable format</li>
-                                                <li><strong>Right to object</strong> &mdash; object to processing for direct marketing or profiling</li>
-                                            </ul>
-                                            <div class="chat-preview-sources">
-                                                <div class="chat-preview-source">gdpr_compliance_guide.pdf &mdash; Chapter 3</div>
-                                                <div class="chat-preview-source">eu_data_act_2024.pdf &mdash; Section 2.4</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <a href="demo.html" class="try-it-badge">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                                Try this yourself in the live demo
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
             </div>
+
+            <!-- ═══════════════════════════════════════════════
+                 Use Case 2: Finance — Earnings Risk Detection
+                 ═══════════════════════════════════════════════ -->
+            <div class="uc-panel" id="uc-1">
+                <div class="uc-meta">
+                    <div class="uc-meta-item"><strong>Domain</strong> Finance</div>
+                    <div class="uc-meta-item"><strong>Corpus</strong> Earnings call transcripts, 10-Ks, analyst reports</div>
+                    <div class="uc-meta-item"><strong>N</strong> 500</div>
+                    <div class="uc-meta-item"><strong>Expected output</strong> ~40 docs</div>
+                </div>
+
+                <div class="uc-columns">
+                    <div class="uc-col" id="uc1-filter">
+                        <div class="uc-col-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                            Semantic Filter
+                        </div>
+                        <div class="uc-query-box" id="uc1-query" data-text="Identify companies mentioning declining margins AND supply chain disruption in the same reporting period"></div>
+
+                        <div class="uc-strat-row" id="uc1-strats">
+                            <div class="uc-strat-card tree">
+                                <div class="uc-strat-name">Tree</div>
+                                <div class="uc-strat-val" data-target="25">0</div>
+                                <div class="uc-strat-sub">of 500</div>
+                            </div>
+                            <div class="uc-strat-card hyper">
+                                <div class="uc-strat-name">Hyperedge</div>
+                                <div class="uc-strat-val" data-target="40">0</div>
+                                <div class="uc-strat-sub">of 500</div>
+                            </div>
+                            <div class="uc-strat-card combined">
+                                <div class="uc-strat-name">Combined</div>
+                                <div class="uc-strat-val" data-target="40">0</div>
+                                <div class="uc-strat-sub">of 500</div>
+                            </div>
+                        </div>
+
+                        <div class="uc-doc-list" id="uc1-docs">
+                            <div class="uc-doc match"><span class="uc-doc-name">acme_corp_10K_2024.pdf</span><div class="uc-doc-badges"><span class="uc-badge t-y">Tree</span><span class="uc-badge h-y">Hyper</span><span class="uc-badge c-y">Comb</span></div></div>
+                            <div class="uc-doc match"><span class="uc-doc-name">globaltech_earnings_q3.pdf</span><div class="uc-doc-badges"><span class="uc-badge t-y">Tree</span><span class="uc-badge h-y">Hyper</span><span class="uc-badge c-y">Comb</span></div></div>
+                            <div class="uc-doc match"><span class="uc-doc-name">midwest_mfg_analyst.pdf</span><div class="uc-doc-badges"><span class="uc-badge t-n">Tree</span><span class="uc-badge h-y">Hyper</span><span class="uc-badge c-y">Comb</span></div></div>
+                        </div>
+                        <div class="uc-doc-more" id="uc1-more">+ 497 more documents</div>
+
+                        <div class="uc-obs" id="uc1-obs">
+                            <strong>Observation:</strong> Tree misses <em>midwest_mfg_analyst.pdf</em> where margin decline appears in the financial summary and supply chain risks in a separate section. Hyperedge links cross-section evidence.
+                        </div>
+                    </div>
+
+                    <div class="uc-col" id="uc1-qa">
+                        <div class="uc-col-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            Follow-up Q&amp;A over 40 filtered documents
+                        </div>
+                        <div class="uc-qa-thread">
+                            <div class="uc-qa-msg" id="uc1-q">
+                                <div class="uc-qa-q">What are the main drivers behind margin decline?</div>
+                            </div>
+                            <div class="uc-qa-msg" id="uc1-a">
+                                <div class="uc-qa-a">
+                                    Dominant drivers across the matched filings:
+                                    <ul>
+                                        <li><strong>Logistics cost increases</strong> &mdash; freight and shipping up 15&ndash;30% YoY</li>
+                                        <li><strong>Supplier concentration</strong> &mdash; single-source reliance causing price volatility</li>
+                                        <li><strong>Inventory delays</strong> &mdash; excess stock from demand misforecasting</li>
+                                    </ul>
+                                    Several firms report inability to pass costs to consumers due to weak demand.
+                                    <div class="uc-qa-sources">
+                                        <span class="uc-qa-src">acme_corp_10K_2024.pdf Risk Factors</span>
+                                        <span class="uc-qa-src">globaltech_earnings_q3.pdf MD&amp;A</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align:center;">
+                    <button class="uc-replay" onclick="animateUC(1)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                        Replay
+                    </button>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════
+                 Use Case 3: Academic — Research Trend Mapping
+                 ═══════════════════════════════════════════════ -->
+            <div class="uc-panel" id="uc-2">
+                <div class="uc-meta">
+                    <div class="uc-meta-item"><strong>Domain</strong> Academic</div>
+                    <div class="uc-meta-item"><strong>Corpus</strong> ML/NLP papers (ACL, NeurIPS, ICML)</div>
+                    <div class="uc-meta-item"><strong>N</strong> 10,000</div>
+                    <div class="uc-meta-item"><strong>Expected output</strong> ~120 papers</div>
+                </div>
+
+                <div class="uc-columns">
+                    <div class="uc-col" id="uc2-filter">
+                        <div class="uc-col-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                            Semantic Filter
+                        </div>
+                        <div class="uc-query-box" id="uc2-query" data-text="Papers proposing retrieval-augmented generation (RAG) methods with efficiency improvements over dense retrieval"></div>
+
+                        <div class="uc-strat-row" id="uc2-strats">
+                            <div class="uc-strat-card tree">
+                                <div class="uc-strat-name">Tree</div>
+                                <div class="uc-strat-val" data-target="78">0</div>
+                                <div class="uc-strat-sub">of 10,000</div>
+                            </div>
+                            <div class="uc-strat-card hyper">
+                                <div class="uc-strat-name">Hyperedge</div>
+                                <div class="uc-strat-val" data-target="120">0</div>
+                                <div class="uc-strat-sub">of 10,000</div>
+                            </div>
+                            <div class="uc-strat-card combined">
+                                <div class="uc-strat-name">Combined</div>
+                                <div class="uc-strat-val" data-target="120">0</div>
+                                <div class="uc-strat-sub">of 10,000</div>
+                            </div>
+                        </div>
+
+                        <div class="uc-doc-list" id="uc2-docs">
+                            <div class="uc-doc match"><span class="uc-doc-name">efficient_rag_acl2024.pdf</span><div class="uc-doc-badges"><span class="uc-badge t-y">Tree</span><span class="uc-badge h-y">Hyper</span><span class="uc-badge c-y">Comb</span></div></div>
+                            <div class="uc-doc match"><span class="uc-doc-name">sparse_dense_hybrid_neurips.pdf</span><div class="uc-doc-badges"><span class="uc-badge t-y">Tree</span><span class="uc-badge h-y">Hyper</span><span class="uc-badge c-y">Comb</span></div></div>
+                            <div class="uc-doc match"><span class="uc-doc-name">adaptive_retrieval_icml.pdf</span><div class="uc-doc-badges"><span class="uc-badge t-n">Tree</span><span class="uc-badge h-y">Hyper</span><span class="uc-badge c-y">Comb</span></div></div>
+                        </div>
+                        <div class="uc-doc-more" id="uc2-more">+ 9,997 more documents</div>
+
+                        <div class="uc-obs" id="uc2-obs">
+                            <strong>Observation:</strong> Tree misses <em>adaptive_retrieval_icml.pdf</em> where the RAG method is in the approach section and the efficiency comparison against dense retrieval is in experiments. Hyperedge links cross-section evidence.
+                        </div>
+                    </div>
+
+                    <div class="uc-col" id="uc2-qa">
+                        <div class="uc-col-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            Follow-up Q&amp;A over 120 filtered papers
+                        </div>
+                        <div class="uc-qa-thread">
+                            <div class="uc-qa-msg" id="uc2-q">
+                                <div class="uc-qa-q">What techniques are commonly used to improve efficiency?</div>
+                            </div>
+                            <div class="uc-qa-msg" id="uc2-a">
+                                <div class="uc-qa-a">
+                                    Common techniques across the matched papers:
+                                    <ul>
+                                        <li><strong>Hierarchical indexing</strong> &mdash; multi-level structures to reduce search space</li>
+                                        <li><strong>Sparse-dense hybrid</strong> &mdash; BM25 + dense vectors for better speed-accuracy tradeoff</li>
+                                        <li><strong>Query routing</strong> &mdash; directing queries to specialized sub-indices</li>
+                                        <li><strong>Adaptive triggering</strong> &mdash; reducing retrieval frequency; compressing retrieved contexts</li>
+                                    </ul>
+                                    <div class="uc-qa-sources">
+                                        <span class="uc-qa-src">efficient_rag_acl2024.pdf &sect;3</span>
+                                        <span class="uc-qa-src">sparse_dense_hybrid_neurips.pdf &sect;4.2</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align:center;">
+                    <button class="uc-replay" onclick="animateUC(2)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                        Replay
+                    </button>
+                </div>
+            </div>
+
         </div>
     </section>
 
     <!-- CTA -->
-    <section class="section section-alt" style="text-align:center;">
+    <section class="uc-cta">
         <div class="container">
-            <h2 class="section-title">Ready to try it yourself?</h2>
-            <p class="section-desc" style="margin: 0 auto 24px;">Upload your own documents and explore DocMaster's filtering and Q&amp;A capabilities.</p>
-            <a href="demo.html" class="btn-primary">Try the Live Demo</a>
+            <h2>Try DocMaster</h2>
+            <p>Upload your own documents and run semantic filters with structure-aware RAG.</p>
+            <a href="demo.html" class="btn-primary">Open Live Demo</a>
         </div>
     </section>
 
@@ -514,152 +489,105 @@
 
     <script src="template.js"></script>
     <script>
-    // ── Example tab switching ──
-    function showExample(index) {
-        document.querySelectorAll('.example-tab').forEach((tab, i) => {
-            tab.classList.toggle('active', i === index);
-        });
-        document.querySelectorAll('.example-panel').forEach((panel, i) => {
-            panel.classList.toggle('active', i === index);
-        });
-        // Trigger animations for the active panel
-        setTimeout(() => animateFlow(index), 100);
+    /* ── Tab switching ── */
+    function showUC(i) {
+        document.querySelectorAll('.uc-tab').forEach((t, j) => t.classList.toggle('active', j === i));
+        document.querySelectorAll('.uc-panel').forEach((p, j) => p.classList.toggle('active', j === i));
+        setTimeout(() => animateUC(i), 80);
     }
 
-    // ── Typing animation ──
-    function typeText(el, text, speed, callback) {
-        let i = 0;
+    /* ── Typing effect ── */
+    function typeInto(el, text, speed, cb) {
         el.textContent = '';
         el.classList.add('typing');
-        function type() {
-            if (i < text.length) {
-                el.textContent += text.charAt(i);
-                i++;
-                setTimeout(type, speed);
-            } else {
-                el.classList.remove('typing');
-                if (callback) callback();
-            }
-        }
-        type();
+        let i = 0;
+        (function next() {
+            if (i < text.length) { el.textContent += text.charAt(i++); setTimeout(next, speed); }
+            else { el.classList.remove('typing'); if (cb) cb(); }
+        })();
     }
 
-    // ── Count-up animation ──
-    function countUp(el, target, duration) {
-        const start = 0;
-        const startTime = performance.now();
-        function update(currentTime) {
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            el.textContent = Math.round(start + (target - start) * eased);
-            if (progress < 1) requestAnimationFrame(update);
-        }
-        requestAnimationFrame(update);
+    /* ── Count-up ── */
+    function countUp(el, target, dur) {
+        const t0 = performance.now();
+        (function tick(now) {
+            const p = Math.min((now - t0) / dur, 1);
+            el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+            if (p < 1) requestAnimationFrame(tick);
+        })(t0);
     }
 
-    // ── Animate a flow ──
-    function animateFlow(index) {
-        const flow = document.getElementById(`flow-${index}`);
-        if (!flow) return;
+    /* ── Animate a use-case panel ── */
+    function animateUC(i) {
+        const panel = document.getElementById(`uc-${i}`);
+        if (!panel) return;
 
-        // Reset all animations
-        flow.querySelectorAll('.example-flow-step, .example-flow-arrow').forEach(el => {
-            el.classList.remove('visible');
-        });
-        flow.querySelectorAll('.example-doc-item').forEach(el => el.classList.remove('visible'));
-        flow.querySelectorAll('.example-insight').forEach(el => el.classList.remove('visible'));
-        flow.querySelectorAll('.example-result-card').forEach(el => el.classList.remove('animate-in'));
-        flow.querySelectorAll('.chat-preview-msg').forEach(el => el.classList.remove('visible'));
-        flow.querySelectorAll('.example-result-card-value').forEach(el => el.textContent = '0');
+        // Reset
+        panel.querySelectorAll('.uc-col, .uc-strat-card, .uc-doc, .uc-doc-more, .uc-obs, .uc-qa-msg')
+             .forEach(el => el.classList.remove('visible'));
+        panel.querySelectorAll('.uc-strat-val').forEach(el => el.textContent = '0');
+        const qBox = panel.querySelector('.uc-query-box');
+        if (qBox) { qBox.textContent = ''; qBox.classList.remove('typing'); }
 
-        const steps = flow.querySelectorAll('.example-flow-step');
-        const arrows = flow.querySelectorAll('.example-flow-arrow');
+        const filterCol = panel.querySelector(`#uc${i}-filter`);
+        const qaCol     = panel.querySelector(`#uc${i}-qa`);
 
-        // Step 1: Show first step + typing
+        // T=200ms  — Show filter column + start typing
         setTimeout(() => {
-            if (steps[0]) steps[0].classList.add('visible');
-            const inputText = steps[0]?.querySelector('.example-input-text');
-            if (inputText) {
-                const fullText = inputText.getAttribute('data-full-text');
-                // Decode HTML entities
-                const tmp = document.createElement('span');
-                tmp.innerHTML = fullText;
-                typeText(inputText, tmp.textContent, 25);
-            }
+            filterCol.classList.add('visible');
+            typeInto(qBox, qBox.getAttribute('data-text'), 22);
         }, 200);
 
-        // Arrow 1
-        setTimeout(() => { if (arrows[0]) arrows[0].classList.add('visible'); }, 1600);
-
-        // Step 2: Results
+        // T=2200ms — Strategy cards count up
         setTimeout(() => {
-            if (steps[1]) steps[1].classList.add('visible');
+            panel.querySelectorAll('.uc-strat-card').forEach((card, j) => {
+                setTimeout(() => {
+                    card.classList.add('visible');
+                    const v = card.querySelector('.uc-strat-val');
+                    countUp(v, parseInt(v.getAttribute('data-target')), 700);
+                }, j * 120);
+            });
+        }, 2200);
 
-            // Animate result cards with count-up
-            setTimeout(() => {
-                steps[1]?.querySelectorAll('.example-result-card').forEach((card, i) => {
-                    setTimeout(() => {
-                        card.classList.add('animate-in');
-                        const valEl = card.querySelector('.example-result-card-value');
-                        const target = parseInt(valEl.getAttribute('data-target'));
-                        countUp(valEl, target, 600);
-                    }, i * 150);
-                });
-            }, 300);
-
-            // Stagger doc items
-            setTimeout(() => {
-                steps[1]?.querySelectorAll('.example-doc-item').forEach((item, i) => {
-                    setTimeout(() => item.classList.add('visible'), i * 100);
-                });
-            }, 900);
-
-            // Show insight
-            setTimeout(() => {
-                steps[1]?.querySelector('.example-insight')?.classList.add('visible');
-            }, 1600);
-        }, 2000);
-
-        // Arrow 2
-        setTimeout(() => { if (arrows[1]) arrows[1].classList.add('visible'); }, 4000);
-
-        // Step 3: Chat
+        // T=3000ms — Document list
         setTimeout(() => {
-            if (steps[2]) steps[2].classList.add('visible');
-            // Stagger chat messages
-            setTimeout(() => {
-                steps[2]?.querySelectorAll('.chat-preview-msg').forEach((msg, i) => {
-                    setTimeout(() => msg.classList.add('visible'), i * 400);
-                });
-            }, 300);
-        }, 4400);
+            panel.querySelectorAll('.uc-doc').forEach((d, j) => {
+                setTimeout(() => d.classList.add('visible'), j * 90);
+            });
+        }, 3000);
+
+        // T=3600ms — More indicator + observation
+        setTimeout(() => {
+            const more = panel.querySelector('.uc-doc-more');
+            if (more) more.classList.add('visible');
+        }, 3600);
+        setTimeout(() => {
+            const obs = panel.querySelector('.uc-obs');
+            if (obs) obs.classList.add('visible');
+        }, 3900);
+
+        // T=4200ms — Q&A column
+        setTimeout(() => {
+            qaCol.classList.add('visible');
+            setTimeout(() => panel.querySelector(`#uc${i}-q`)?.classList.add('visible'), 200);
+            setTimeout(() => panel.querySelector(`#uc${i}-a`)?.classList.add('visible'), 700);
+        }, 4200);
     }
 
-    function replayAnimation(index) {
-        animateFlow(index);
-    }
+    /* ── Init ── */
+    document.addEventListener('DOMContentLoaded', () => animateUC(0));
 
-    // ── Intersection Observer for scroll-triggered animation ──
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const panel = entry.target;
-                const index = parseInt(panel.id.split('-')[1]);
-                animateFlow(index);
-                observer.unobserve(panel);
+    /* ── Scroll-trigger for other panels ── */
+    const obs = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+            if (e.isIntersecting) {
+                const idx = parseInt(e.target.id.split('-')[1]);
+                animateUC(idx);
+                obs.unobserve(e.target);
             }
         });
     }, { threshold: 0.2 });
-
-    // Initial animation for first visible panel
-    document.addEventListener('DOMContentLoaded', () => {
-        animateFlow(0);
-        // Observe other panels
-        document.querySelectorAll('.example-panel').forEach(panel => {
-            observer.observe(panel);
-        });
-    });
+    document.querySelectorAll('.uc-panel').forEach(p => obs.observe(p));
     </script>
 
 </body>
