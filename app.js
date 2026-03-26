@@ -422,81 +422,120 @@
         function renderFilterResultInConversation(condition, data) {
             hideWelcome();
 
-            const treeCount = data.matched_documents.document_tree;
-            const hyperCount = data.matched_documents.hyperedge_search;
-            const combCount = data.matched_documents.combined;
-            const totalDocs = data.results.length;
+            const treeCount   = data.matched_documents.document_tree;
+            const semCount    = data.matched_documents.semantic_cluster || 0;
+            const hyperCount  = data.matched_documents.hyperedge_search;
+            const combCount   = data.matched_documents.combined;
+            const totalDocs   = data.results.length;
 
-            // Build result HTML
+            const tokTree  = data.total_tokens.document    || 0;
+            const tokSem   = data.total_tokens.semantic    || 0;
+            const tokHyper = data.total_tokens.hyperedge   || 0;
+            const tokComb  = data.total_tokens.combined    || 0;
+            const maxTok   = Math.max(tokTree, tokSem, tokHyper, tokComb, 1);
+
+            // Nice y-axis tick values
+            function niceMax(v) {
+                const mag = Math.pow(10, Math.floor(Math.log10(v || 1)));
+                return Math.ceil(v / mag) * mag;
+            }
+            const yMax = niceMax(maxTok);
+            const yMid = Math.round(yMax / 2);
+
+            // Muted academic palette
+            const C = { tree: '#1a56db', semantic: '#b45309', hyper: '#6d28d9', combined: '#15803d' };
+            const methods = [
+                { key: 'tree',     label: 'Doc Tree',   count: treeCount,  tokens: tokTree,  color: C.tree },
+                { key: 'semantic', label: 'Semantic',    count: semCount,   tokens: tokSem,   color: C.semantic },
+                { key: 'hyper',    label: 'Hyperedge',   count: hyperCount, tokens: tokHyper,  color: C.hyper },
+                { key: 'combined', label: 'Combined',    count: combCount,  tokens: tokComb,   color: C.combined },
+            ];
+
             let html = `<div class="conv-filter-result">`;
 
-            // Header
+            // ── Header ──
             html += `<div class="conv-filter-header">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
                 <span class="conv-filter-header-text">Filter Results</span>
-                <span class="conv-filter-query" title="${escapeHtml(condition)}">"${escapeHtml(condition.length > 40 ? condition.substring(0, 40) + '...' : condition)}"</span>
+                <span class="conv-filter-query" title="${escapeHtml(condition)}">&ldquo;${escapeHtml(condition.length > 50 ? condition.substring(0, 50) + '\u2026' : condition)}&rdquo;</span>
             </div>`;
 
-            // Stats row
-            html += `<div class="conv-stats-row">
-                <div class="conv-stat-card ${treeCount > 0 ? 'match' : 'no-match'}">
-                    <div class="conv-stat-value">${treeCount}</div>
-                    <div class="conv-stat-label">Tree</div>
-                </div>
-                <div class="conv-stat-card ${hyperCount > 0 ? 'match' : 'no-match'}">
-                    <div class="conv-stat-value">${hyperCount}</div>
-                    <div class="conv-stat-label">Hyper</div>
-                </div>
-                <div class="conv-stat-card ${combCount > 0 ? 'match' : 'no-match'}">
-                    <div class="conv-stat-value">${combCount}</div>
-                    <div class="conv-stat-label">Combined</div>
-                </div>
-            </div>`;
-
-            // Distribution bars
-            html += `<div class="conv-distribution">
-                <div class="conv-dist-title">Match Distribution</div>
-                <div class="conv-dist-bar-row">
-                    <span class="conv-dist-label">Tree</span>
-                    <div class="conv-dist-bar"><div class="conv-dist-fill tree" style="width:0%" data-target="${totalDocs > 0 ? (treeCount/totalDocs*100) : 0}"></div></div>
-                    <span class="conv-dist-count">${treeCount}/${totalDocs}</span>
-                </div>
-                <div class="conv-dist-bar-row">
-                    <span class="conv-dist-label">Hyper</span>
-                    <div class="conv-dist-bar"><div class="conv-dist-fill hyper" style="width:0%" data-target="${totalDocs > 0 ? (hyperCount/totalDocs*100) : 0}"></div></div>
-                    <span class="conv-dist-count">${hyperCount}/${totalDocs}</span>
-                </div>
-                <div class="conv-dist-bar-row">
-                    <span class="conv-dist-label">Combined</span>
-                    <div class="conv-dist-bar"><div class="conv-dist-fill combined" style="width:0%" data-target="${totalDocs > 0 ? (combCount/totalDocs*100) : 0}"></div></div>
-                    <span class="conv-dist-count">${combCount}/${totalDocs}</span>
-                </div>
-            </div>`;
-
-            // Per-doc breakdown
-            html += `<div class="conv-doc-list">`;
-            data.results.forEach(doc => {
-                if (doc.error) {
-                    html += `<div class="conv-doc-item"><span class="conv-doc-name">${escapeHtml(doc.filename)}</span><span style="color:var(--error);font-size:0.78em;">Error</span></div>`;
-                    return;
-                }
-                html += `<div class="conv-doc-item ${doc.combined ? 'matched' : ''}">
-                    <span class="conv-doc-name">${escapeHtml(doc.filename)}</span>
-                    <div class="conv-doc-badges">
-                        <span class="conv-badge ${doc.document_tree ? 'pass' : 'fail'}">${doc.document_tree ? '\u2713' : '\u2717'} T</span>
-                        <span class="conv-badge ${doc.hyperedge_search ? 'pass' : 'fail'}">${doc.hyperedge_search ? '\u2713' : '\u2717'} H</span>
-                        <span class="conv-badge ${doc.combined ? 'pass' : 'fail'}">${doc.combined ? '\u2713' : '\u2717'} C</span>
-                    </div>
+            // ── Method comparison table ──
+            html += `<div class="conv-method-table">
+                <div class="conv-method-table-head">
+                    <span>Method</span><span>Matched</span><span>Recall</span><span>Tokens</span>
+                </div>`;
+            methods.forEach(m => {
+                const pct = totalDocs > 0 ? Math.round(m.count / totalDocs * 100) : 0;
+                html += `<div class="conv-method-row ${m.count > 0 ? 'has-match' : ''}">
+                    <span class="conv-method-name">
+                        <span class="conv-method-dot" style="background:${m.color}"></span>${m.label}
+                    </span>
+                    <span class="conv-method-matched">${m.count}<span class="conv-method-total">/${totalDocs}</span></span>
+                    <span class="conv-method-recall">
+                        <span class="conv-recall-bar-wrap">
+                            <span class="conv-recall-bar-fill" style="width:0%;background:${m.color}20;border-right:2px solid ${m.color}" data-target="${pct}"></span>
+                        </span>
+                        <span class="conv-recall-pct">${pct}%</span>
+                    </span>
+                    <span class="conv-method-tokens">${m.tokens.toLocaleString()}</span>
                 </div>`;
             });
             html += `</div>`;
 
-            // Token usage
-            html += `<div class="conv-token-row">
-                <span class="conv-token-chip">Tree: <strong>${data.total_tokens.document.toLocaleString()}</strong></span>
-                <span class="conv-token-chip">Hyper: <strong>${data.total_tokens.hyperedge.toLocaleString()}</strong></span>
-                <span class="conv-token-chip">Combined: <strong>${data.total_tokens.combined.toLocaleString()}</strong></span>
+            // ── Token Cost — vertical bar chart ──
+            html += `<div class="conv-token-chart">
+                <div class="conv-chart-title">Token Cost Comparison</div>
+                <div class="conv-chart-body">
+                    <div class="conv-chart-yaxis">
+                        <span>${yMax.toLocaleString()}</span>
+                        <span>${yMid.toLocaleString()}</span>
+                        <span>0</span>
+                    </div>
+                    <div class="conv-chart-plot">
+                        <div class="conv-chart-grid">
+                            <div class="conv-chart-gridline"></div>
+                            <div class="conv-chart-gridline"></div>
+                            <div class="conv-chart-gridline"></div>
+                        </div>
+                        <div class="conv-chart-bars">`;
+            methods.forEach(m => {
+                const heightPct = yMax > 0 ? (m.tokens / yMax * 100) : 0;
+                html += `<div class="conv-chart-col">
+                    <div class="conv-chart-bar-wrap">
+                        <span class="conv-bar-value">${m.tokens >= 1000 ? (m.tokens/1000).toFixed(1)+'k' : m.tokens}</span>
+                        <div class="conv-chart-bar" style="height:0%;background:${m.color}cc" data-target="${heightPct.toFixed(1)}"></div>
+                    </div>
+                    <div class="conv-chart-bar-label" style="color:${m.color}">${m.label}</div>
+                </div>`;
+            });
+            html += `       </div>
+                    </div>
+                </div>
             </div>`;
+
+            // ── Per-doc breakdown ──
+            if (data.results.length > 0) {
+                html += `<div class="conv-doc-section">
+                    <div class="conv-dist-title">Per-Document Results</div>
+                    <div class="conv-doc-list">`;
+                data.results.forEach(doc => {
+                    if (doc.error) {
+                        html += `<div class="conv-doc-item"><span class="conv-doc-name">${escapeHtml(doc.filename)}</span><span style="color:var(--error);font-size:0.78em;">Error</span></div>`;
+                        return;
+                    }
+                    html += `<div class="conv-doc-item ${doc.combined ? 'matched' : ''}">
+                        <span class="conv-doc-name">${escapeHtml(doc.filename)}</span>
+                        <div class="conv-doc-badges">
+                            <span class="conv-badge ${doc.document_tree ? 'pass' : 'fail'}" title="Document Tree">${doc.document_tree ? '\u2713' : '\u2717'} Tree</span>
+                            <span class="conv-badge ${doc.semantic_cluster ? 'pass' : 'fail'}" title="Semantic Cluster">${doc.semantic_cluster ? '\u2713' : '\u2717'} Sem</span>
+                            <span class="conv-badge ${doc.hyperedge_search ? 'pass' : 'fail'}" title="Hyperedge">${doc.hyperedge_search ? '\u2713' : '\u2717'} Hyp</span>
+                            <span class="conv-badge ${doc.combined ? 'pass' : 'fail'}" title="Combined">${doc.combined ? '\u2713' : '\u2717'} Comb</span>
+                        </div>
+                    </div>`;
+                });
+                html += `   </div></div>`;
+            }
 
             html += `</div>`;
 
@@ -514,13 +553,16 @@
             chatMessages.appendChild(msgEl);
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            // Animate distribution bars after render
+            // Animate recall bars and token bars after render
             requestAnimationFrame(() => {
                 setTimeout(() => {
-                    msgEl.querySelectorAll('.conv-dist-fill').forEach(bar => {
-                        bar.style.width = bar.dataset.target + '%';
+                    msgEl.querySelectorAll('.conv-recall-bar-fill').forEach(el => {
+                        el.style.width = el.dataset.target + '%';
                     });
-                }, 100);
+                    msgEl.querySelectorAll('.conv-chart-bar').forEach(el => {
+                        el.style.height = el.dataset.target + '%';
+                    });
+                }, 80);
             });
         }
 
@@ -532,19 +574,23 @@
             document.getElementById('filterQueryDisplay').textContent = condition;
 
             const treeCount = data.matched_documents.document_tree;
+            const semCount = data.matched_documents.semantic_cluster || 0;
             const hyperCount = data.matched_documents.hyperedge_search;
             const combCount = data.matched_documents.combined;
 
             // Mini cards
             const miniTree = document.getElementById('miniDocTree');
+            const miniSem = document.getElementById('miniSemantic');
             const miniHyper = document.getElementById('miniHyperedge');
             const miniComb = document.getElementById('miniCombined');
 
             document.getElementById('miniDocTreeVal').textContent = treeCount;
+            document.getElementById('miniSemanticVal').textContent = semCount;
             document.getElementById('miniHyperedgeVal').textContent = hyperCount;
             document.getElementById('miniCombinedVal').textContent = combCount;
 
             miniTree.classList.toggle('match', treeCount > 0);
+            miniSem.classList.toggle('match', semCount > 0);
             miniHyper.classList.toggle('match', hyperCount > 0);
             miniComb.classList.toggle('match', combCount > 0);
 
@@ -555,15 +601,17 @@
                 return `<div class="right-doc-item ${doc.combined ? 'matched' : ''}">
                     <span class="right-doc-name">${escapeHtml(doc.filename)}</span>
                     <div class="right-doc-badges">
-                        <span class="right-badge ${doc.document_tree ? 'pass' : 'fail'}">${doc.document_tree ? '\u2713' : '\u2717'}</span>
-                        <span class="right-badge ${doc.hyperedge_search ? 'pass' : 'fail'}">${doc.hyperedge_search ? '\u2713' : '\u2717'}</span>
-                        <span class="right-badge ${doc.combined ? 'pass' : 'fail'}">${doc.combined ? '\u2713' : '\u2717'}</span>
+                        <span class="right-badge ${doc.document_tree ? 'pass' : 'fail'}" title="Tree">${doc.document_tree ? '\u2713' : '\u2717'}</span>
+                        <span class="right-badge ${doc.semantic_cluster ? 'pass' : 'fail'}" title="Semantic">${doc.semantic_cluster ? '\u2713' : '\u2717'}</span>
+                        <span class="right-badge ${doc.hyperedge_search ? 'pass' : 'fail'}" title="Hyper">${doc.hyperedge_search ? '\u2713' : '\u2717'}</span>
+                        <span class="right-badge ${doc.combined ? 'pass' : 'fail'}" title="Combined">${doc.combined ? '\u2713' : '\u2717'}</span>
                     </div>
                 </div>`;
             }).join('');
 
-            // Tokens
+            // Filter tokens
             document.getElementById('rightDocTokens').textContent = data.total_tokens.document.toLocaleString();
+            document.getElementById('rightSemanticTokens').textContent = (data.total_tokens.semantic || 0).toLocaleString();
             document.getElementById('rightHyperedgeTokens').textContent = data.total_tokens.hyperedge.toLocaleString();
             document.getElementById('rightCombinedTokens').textContent = data.total_tokens.combined.toLocaleString();
         }
@@ -688,7 +736,7 @@
 
         indexViewTabs.addEventListener('click', e => {
             const tab = e.target.closest('.index-tab');
-            if (!tab || tab.classList.contains('active')) return;
+            if (!tab || tab.classList.contains('active') || tab.classList.contains('disabled')) return;
             indexViewTabs.querySelectorAll('.index-tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             currentViewMode = tab.dataset.view;
@@ -715,6 +763,18 @@
                     currentTreeData = treeData;
                     if (indexRes && indexRes.ok) {
                         currentIndexData = await indexRes.json();
+                        // Display index construction tokens
+                        const idxTokens = currentIndexData.index_tokens || {};
+                        const idxSection = document.getElementById('indexTokensSection');
+                        const filterPanel = document.getElementById('filterResultsPanel');
+                        if (idxSection && (idxTokens.document_tree || idxTokens.semantic_cluster || idxTokens.hyperedge)) {
+                            const fmt = t => t ? (t.total_tokens || 0).toLocaleString() : '—';
+                            document.getElementById('idxDocTreeTokens').textContent = fmt(idxTokens.document_tree);
+                            document.getElementById('idxSemanticTokens').textContent = fmt(idxTokens.semantic_cluster);
+                            document.getElementById('idxHyperedgeTokens').textContent = fmt(idxTokens.hyperedge);
+                            idxSection.style.display = 'block';
+                            if (filterPanel) filterPanel.style.display = 'block';
+                        }
                     }
                     indexViewTabs.style.display = 'flex';
                     updateTabAvailability();
@@ -755,9 +815,17 @@
             else if (currentViewMode === 'cluster') displayClusterView(currentTreeData, currentIndexData);
         }
 
-        // Build tree structure from flat node array
+        // Build tree structure from flat node array (deduplicates by id)
         function buildTreeStructure(nodes) {
             if (!nodes || nodes.length === 0) return null;
+            // Deduplicate: keep first occurrence of each id
+            const seen = new Set();
+            nodes = nodes.filter(n => {
+                const key = n.id != null ? String(n.id) : `${n.type}:${n.depth}:${(n.content || '').substring(0, 80)}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
             const rootNodes = [];
             nodes.forEach(n => { n._children = []; });
             nodes.forEach((node, idx) => {
@@ -771,229 +839,623 @@
                     }
                 }
             });
-            if (rootNodes.length === 1) return rootNodes[0];
-            return { id: '__virtual_root', type: 'root', depth: 0, content: 'Document', _children: rootNodes };
-        }
-
-        function visibleChildren(node) {
-            if (node._collapsed || !node._children) return [];
-            return node._children;
-        }
-
-        function computeTreeLayout(root, cfg) {
-            const { nodeW, nodeH, hGap, vGap } = cfg;
-            function subtreeWidth(node) {
-                const kids = visibleChildren(node);
-                if (kids.length === 0) {
-                    node._sw = nodeW;
-                    return node._sw;
-                }
-                let w = 0;
-                kids.forEach(c => { w += subtreeWidth(c); });
-                w += (kids.length - 1) * hGap;
-                node._sw = Math.max(nodeW, w);
-                return node._sw;
-            }
-            subtreeWidth(root);
-
-            function assign(node, x, y) {
-                node._x = x + node._sw / 2;
-                node._y = y;
-                const kids = visibleChildren(node);
-                if (kids.length > 0) {
-                    let cx = x;
-                    kids.forEach(c => {
-                        assign(c, cx, y + nodeH + vGap);
-                        cx += c._sw + hGap;
-                    });
-                }
-            }
-            assign(root, 0, 0);
-
-            return { width: root._sw + nodeW, height: getMaxDepth(root) * (nodeH + vGap) + nodeH };
-        }
-
-        function getMaxDepth(node) {
-            const kids = visibleChildren(node);
-            if (kids.length === 0) return 0;
-            return 1 + Math.max(...kids.map(getMaxDepth));
+            return rootNodes.length === 1 ? rootNodes[0] : { id: '__virtual_root', type: 'root', depth: 0, content: 'Document', _children: rootNodes };
         }
 
         function collectNodes(node, list) {
             list.push(node);
-            visibleChildren(node).forEach(c => collectNodes(c, list));
+            (node._children || []).forEach(c => collectNodes(c, list));
             return list;
         }
 
-        function renderTreeSVG(root, container, cfg, isModal) {
-            const { nodeW, nodeH } = cfg;
-            const pad = 20;
-
+        // ── Force-directed graph for panel view (Obsidian-style) ──
+        function renderForceGraph(root, container, isModal) {
             const wrapper = document.createElement('div');
-            wrapper.className = 'tree-svg-wrapper' + (isModal ? ' tree-svg-modal' : '');
+            wrapper.className = 'tree-svg-wrapper tree-force-graph' + (isModal ? ' tree-force-graph-modal' : '');
 
-            function draw() {
-                const oldSvg = wrapper.querySelector('svg');
-                if (oldSvg) oldSvg.remove();
-                const oldPopup = container.querySelector('.tree-detail-popup');
-                if (oldPopup) oldPopup.remove();
-
-                const layout = computeTreeLayout(root, cfg);
-                const svgW = layout.width + pad * 2;
-                const svgH = layout.height + pad * 2;
-
-                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
-                svg.setAttribute('width', svgW);
-                svg.setAttribute('height', svgH);
-                svg.classList.add('tree-svg');
-
-                const allNodes = collectNodes(root, []);
-
-                const edgesG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                allNodes.forEach(node => {
-                    visibleChildren(node).forEach(child => {
-                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        const x1 = node._x + pad, y1 = node._y + nodeH + pad;
-                        const x2 = child._x + pad, y2 = child._y + pad;
-                        const my = (y1 + y2) / 2;
-                        path.setAttribute('d', `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`);
-                        path.setAttribute('fill', 'none');
-                        path.setAttribute('stroke', '#cbd5e1');
-                        path.setAttribute('stroke-width', '2');
-                        edgesG.appendChild(path);
-                    });
+            // Flatten tree into nodes & edges
+            const allNodes = collectNodes(root, []);
+            const edges = [];
+            allNodes.forEach(node => {
+                (node._children || []).forEach(child => {
+                    edges.push({ source: node, target: child });
                 });
-                svg.appendChild(edgesG);
+            });
 
-                const nodesG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                allNodes.forEach(node => {
-                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                    g.setAttribute('transform', `translate(${node._x - nodeW / 2 + pad}, ${node._y + pad})`);
-                    g.style.cursor = 'pointer';
+            const W = isModal ? (container.clientWidth || window.innerWidth * 0.9) : (container.clientWidth || 280);
+            const H = isModal ? (container.clientHeight || window.innerHeight * 0.75) : 320;
+            const centerX = W / 2, centerY = H / 2;
 
-                    const color = NODE_COLORS[node.type] || '#64748b';
-                    const hasKids = node._children && node._children.length > 0;
-                    const isCollapsed = hasKids && node._collapsed;
-
-                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                    rect.setAttribute('width', nodeW);
-                    rect.setAttribute('height', nodeH);
-                    rect.setAttribute('rx', '8');
-                    rect.setAttribute('fill', isCollapsed ? '#f8fafc' : 'white');
-                    rect.setAttribute('stroke', color);
-                    rect.setAttribute('stroke-width', '2');
-                    if (isCollapsed) rect.setAttribute('stroke-dasharray', '6 3');
-                    g.appendChild(rect);
-
-                    const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                    bar.setAttribute('width', nodeW);
-                    bar.setAttribute('height', '4');
-                    bar.setAttribute('rx', '2');
-                    bar.setAttribute('fill', color);
-                    g.appendChild(bar);
-
-                    const typeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    typeText.setAttribute('x', nodeW / 2);
-                    typeText.setAttribute('y', '18');
-                    typeText.setAttribute('text-anchor', 'middle');
-                    typeText.setAttribute('font-size', isModal ? '12' : '10');
-                    typeText.setAttribute('font-weight', '700');
-                    typeText.setAttribute('fill', color);
-                    typeText.textContent = (node.type || 'node').toUpperCase();
-                    g.appendChild(typeText);
-
-                    let preview = '';
-                    if (node.content) preview = node.content.length > 30 ? node.content.substring(0, 30) + '...' : node.content;
-                    else if (node.filename) preview = node.filename;
-                    if (preview) {
-                        const prevText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        prevText.setAttribute('x', nodeW / 2);
-                        prevText.setAttribute('y', '32');
-                        prevText.setAttribute('text-anchor', 'middle');
-                        prevText.setAttribute('font-size', isModal ? '10' : '8');
-                        prevText.setAttribute('fill', '#64748b');
-                        prevText.textContent = preview;
-                        g.appendChild(prevText);
-                    }
-
-                    if (hasKids) {
-                        const toggleG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                        toggleG.setAttribute('transform', `translate(${nodeW / 2}, ${nodeH})`);
-                        toggleG.style.cursor = 'pointer';
-
-                        const toggleBg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                        toggleBg.setAttribute('r', '10');
-                        toggleBg.setAttribute('fill', 'white');
-                        toggleBg.setAttribute('stroke', color);
-                        toggleBg.setAttribute('stroke-width', '1.5');
-                        toggleG.appendChild(toggleBg);
-
-                        const toggleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        toggleText.setAttribute('text-anchor', 'middle');
-                        toggleText.setAttribute('y', '4');
-                        toggleText.setAttribute('font-size', '12');
-                        toggleText.setAttribute('font-weight', '700');
-                        toggleText.setAttribute('fill', color);
-                        toggleText.textContent = isCollapsed ? '+' : '\u2212';
-                        toggleG.appendChild(toggleText);
-
-                        const countText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        countText.setAttribute('text-anchor', 'middle');
-                        countText.setAttribute('y', '22');
-                        countText.setAttribute('font-size', '8');
-                        countText.setAttribute('font-weight', '600');
-                        countText.setAttribute('fill', '#94a3b8');
-                        countText.textContent = node._children.length;
-                        toggleG.appendChild(countText);
-
-                        toggleG.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            node._collapsed = !node._collapsed;
-                            draw();
-                        });
-
-                        toggleG.addEventListener('mouseenter', () => {
-                            toggleBg.setAttribute('fill', color);
-                            toggleText.setAttribute('fill', 'white');
-                        });
-                        toggleG.addEventListener('mouseleave', () => {
-                            toggleBg.setAttribute('fill', 'white');
-                            toggleText.setAttribute('fill', color);
-                        });
-
-                        g.appendChild(toggleG);
-                    }
-
-                    g.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        showNodeDetail(node, container, wrapper);
-                    });
-
-                    g.addEventListener('mouseenter', () => {
-                        rect.setAttribute('stroke-width', '3');
-                        rect.setAttribute('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))');
-                    });
-                    g.addEventListener('mouseleave', () => {
-                        rect.setAttribute('stroke-width', '2');
-                        rect.removeAttribute('filter');
-                    });
-
-                    nodesG.appendChild(g);
-                });
-                svg.appendChild(nodesG);
-
-                svg.addEventListener('click', () => {
-                    const existing = container.querySelector('.tree-detail-popup');
-                    if (existing) existing.remove();
-                });
-
-                wrapper.appendChild(svg);
+            // Node radii by type — larger in modal
+            const sizeScale = isModal ? 1.8 : 1;
+            function getRadius(node) {
+                if (node.type === 'root') return 8 * sizeScale;
+                if (node.type === 'title') return 5 * sizeScale;
+                return 3.5 * sizeScale;
             }
 
-            draw();
+            // Initialize positions — spread by depth
+            const spreadScale = isModal ? 2.5 : 1;
+            allNodes.forEach((node, i) => {
+                const angle = (i / allNodes.length) * Math.PI * 2 + Math.random() * 0.5;
+                const dist = (30 + (node.depth || 0) * 40 + Math.random() * 20) * spreadScale;
+                node._fx = centerX + Math.cos(angle) * dist;
+                node._fy = centerY + Math.sin(angle) * dist;
+                node._vx = 0;
+                node._vy = 0;
+            });
+
+            // Zoom/pan state
+            let viewX = 0, viewY = 0, viewScale = 1;
+            let isPanning = false, panStartX = 0, panStartY = 0, panStartVX = 0, panStartVY = 0;
+            let dragNode = null, dragOffsetX = 0, dragOffsetY = 0;
+
+            // Tooltip element
+            const tooltip = document.createElement('div');
+            tooltip.className = 'force-graph-tooltip';
+            tooltip.style.display = 'none';
+            wrapper.appendChild(tooltip);
+
+            // SVG setup
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.classList.add('tree-svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', isModal ? '100%' : H);
+            svg.style.cursor = 'grab';
+            svg.style.background = isModal ? '#f8fafc' : '#fafbfc';
+            svg.style.borderRadius = isModal ? '0' : '8px';
+
+            const edgesG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            const nodesG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            svg.appendChild(edgesG);
+            svg.appendChild(nodesG);
+            wrapper.appendChild(svg);
+
+            // Create SVG elements for edges
+            const edgeEls = edges.map(() => {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('stroke', '#e2e8f0');
+                line.setAttribute('stroke-width', '1');
+                line.setAttribute('opacity', '0.6');
+                edgesG.appendChild(line);
+                return line;
+            });
+
+            // Create SVG elements for nodes
+            const nodeEls = allNodes.map((node) => {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.style.cursor = 'pointer';
+
+                const color = NODE_COLORS[node.type] || '#64748b';
+                const r = getRadius(node);
+
+                // Outer glow (hidden by default, shown on hover)
+                const glow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                glow.setAttribute('r', r + 4);
+                glow.setAttribute('fill', color);
+                glow.setAttribute('opacity', '0');
+                glow.classList.add('node-glow');
+                g.appendChild(glow);
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('r', r);
+                circle.setAttribute('fill', color);
+                circle.setAttribute('opacity', '0.85');
+                g.appendChild(circle);
+
+                // Show labels
+                const showLabel = node.type === 'root' || (isModal && (node.type === 'title'));
+                if (showLabel) {
+                    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    label.setAttribute('text-anchor', 'middle');
+                    label.setAttribute('y', -r - 4);
+                    label.setAttribute('font-size', isModal ? '11' : '9');
+                    label.setAttribute('font-weight', '600');
+                    label.setAttribute('fill', color);
+                    let labelText = node.filename || node.content || (node.type || 'node');
+                    if (labelText.length > 25) labelText = labelText.substring(0, 25) + '...';
+                    label.textContent = labelText;
+                    g.appendChild(label);
+                }
+
+                // Hover: show tooltip
+                g.addEventListener('mouseenter', (e) => {
+                    glow.setAttribute('opacity', '0.2');
+                    circle.setAttribute('opacity', '1');
+                    circle.setAttribute('r', r + 1.5);
+                    const typeStr = (node.type || 'node').toUpperCase();
+                    let content = typeStr;
+                    if (node.content) content += ': ' + (node.content.length > 60 ? node.content.substring(0, 60) + '...' : node.content);
+                    else if (node.filename) content += ': ' + node.filename;
+                    tooltip.textContent = content;
+                    tooltip.style.display = 'block';
+                    const rect = wrapper.getBoundingClientRect();
+                    tooltip.style.left = (e.clientX - rect.left + 10) + 'px';
+                    tooltip.style.top = (e.clientY - rect.top - 24) + 'px';
+                });
+                g.addEventListener('mouseleave', () => {
+                    glow.setAttribute('opacity', '0');
+                    circle.setAttribute('opacity', '0.85');
+                    circle.setAttribute('r', r);
+                    tooltip.style.display = 'none';
+                });
+
+                // Click: show detail popup
+                g.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showNodeDetail(node, container, wrapper);
+                });
+
+                // Drag node
+                g.addEventListener('mousedown', (e) => {
+                    if (e.button !== 0) return;
+                    e.stopPropagation();
+                    dragNode = node;
+                    dragOffsetX = 0;
+                    dragOffsetY = 0;
+                    svg.style.cursor = 'grabbing';
+                    e.preventDefault();
+                });
+
+                nodesG.appendChild(g);
+                return g;
+            });
+
+            // Simulation parameters
+            const springLen = isModal ? 70 : 35;
+            const springK = 0.04;
+            const repelK = isModal ? 3000 : 800;
+            const centerK = isModal ? 0.003 : 0.005;
+            const damping = 0.85;
+            let animFrame = null;
+            let settled = 0;
+
+            function simulate() {
+                // Reset forces
+                allNodes.forEach(n => { n._ax = 0; n._ay = 0; });
+
+                // Center gravity
+                allNodes.forEach(n => {
+                    n._ax += (centerX - n._fx) * centerK;
+                    n._ay += (centerY - n._fy) * centerK;
+                });
+
+                // Repulsion (all pairs)
+                for (let i = 0; i < allNodes.length; i++) {
+                    for (let j = i + 1; j < allNodes.length; j++) {
+                        const a = allNodes[i], b = allNodes[j];
+                        let dx = a._fx - b._fx, dy = a._fy - b._fy;
+                        let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const force = repelK / (dist * dist);
+                        const fx = (dx / dist) * force, fy = (dy / dist) * force;
+                        a._ax += fx; a._ay += fy;
+                        b._ax -= fx; b._ay -= fy;
+                    }
+                }
+
+                // Spring forces (edges)
+                edges.forEach(({ source, target }) => {
+                    let dx = target._fx - source._fx, dy = target._fy - source._fy;
+                    let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const force = (dist - springLen) * springK;
+                    const fx = (dx / dist) * force, fy = (dy / dist) * force;
+                    source._ax += fx; source._ay += fy;
+                    target._ax -= fx; target._ay -= fy;
+                });
+
+                // Integrate
+                let maxV = 0;
+                allNodes.forEach(n => {
+                    if (n === dragNode) return; // dragged node is pinned
+                    n._vx = (n._vx + n._ax) * damping;
+                    n._vy = (n._vy + n._ay) * damping;
+                    n._fx += n._vx;
+                    n._fy += n._vy;
+                    maxV = Math.max(maxV, Math.abs(n._vx), Math.abs(n._vy));
+                });
+
+                // Render
+                render();
+
+                // Stop when settled
+                if (maxV < 0.05) {
+                    settled++;
+                    if (settled > 60) return; // fully settled
+                } else {
+                    settled = 0;
+                }
+                animFrame = requestAnimationFrame(simulate);
+            }
+
+            function render() {
+                // Update viewBox for zoom/pan
+                const vbX = -viewX / viewScale + centerX - (W / 2) / viewScale;
+                const vbY = -viewY / viewScale + centerY - (H / 2) / viewScale;
+                const vbW = W / viewScale;
+                const vbH = H / viewScale;
+                svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+
+                edges.forEach(({ source, target }, i) => {
+                    edgeEls[i].setAttribute('x1', source._fx);
+                    edgeEls[i].setAttribute('y1', source._fy);
+                    edgeEls[i].setAttribute('x2', target._fx);
+                    edgeEls[i].setAttribute('y2', target._fy);
+                });
+
+                allNodes.forEach((node, i) => {
+                    nodeEls[i].setAttribute('transform', `translate(${node._fx}, ${node._fy})`);
+                });
+            }
+
+            // Mouse events for pan & drag
+            svg.addEventListener('mousedown', (e) => {
+                if (e.button !== 0 || dragNode) return;
+                isPanning = true;
+                panStartX = e.clientX;
+                panStartY = e.clientY;
+                panStartVX = viewX;
+                panStartVY = viewY;
+                svg.style.cursor = 'grabbing';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (dragNode) {
+                    // Convert screen coords to SVG coords
+                    const rect = svg.getBoundingClientRect();
+                    const svgX = (e.clientX - rect.left) / rect.width;
+                    const svgY = (e.clientY - rect.top) / rect.height;
+                    const vb = svg.getAttribute('viewBox').split(' ').map(Number);
+                    dragNode._fx = vb[0] + svgX * vb[2];
+                    dragNode._fy = vb[1] + svgY * vb[3];
+                    dragNode._vx = 0;
+                    dragNode._vy = 0;
+                    // Wake simulation
+                    settled = 0;
+                    if (!animFrame) animFrame = requestAnimationFrame(simulate);
+                    return;
+                }
+                if (!isPanning) return;
+                viewX = panStartVX + (e.clientX - panStartX);
+                viewY = panStartVY + (e.clientY - panStartY);
+                render();
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (dragNode) {
+                    dragNode = null;
+                    svg.style.cursor = 'grab';
+                }
+                if (isPanning) {
+                    isPanning = false;
+                    svg.style.cursor = 'grab';
+                }
+            });
+
+            // Scroll to zoom
+            svg.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                viewScale = Math.max(0.3, Math.min(4, viewScale * delta));
+                render();
+            }, { passive: false });
+
+            // Dismiss popup on svg click
+            svg.addEventListener('click', () => {
+                const existing = container.querySelector('.tree-detail-popup');
+                if (existing) existing.remove();
+            });
+
             container.appendChild(wrapper);
-            return { wrapper, redraw: draw };
+
+            // Start simulation
+            animFrame = requestAnimationFrame(simulate);
+
+            function resetView() {
+                viewX = 0; viewY = 0; viewScale = 1;
+                render();
+            }
+
+            function destroy() {
+                if (animFrame) cancelAnimationFrame(animFrame);
+            }
+
+            return { wrapper, resetView, destroy };
+        }
+
+        // ── Radial Tree for fullscreen modal ──
+        function renderRadialTree(root, container) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'tree-svg-wrapper tree-force-graph tree-force-graph-modal';
+
+            const allNodes = collectNodes(root, []);
+            const edges = [];
+            allNodes.forEach(node => {
+                (node._children || []).forEach(child => {
+                    edges.push({ source: node, target: child });
+                });
+            });
+
+            const W = container.clientWidth || window.innerWidth * 0.9;
+            const H = container.clientHeight || window.innerHeight * 0.75;
+            // Root near top so tree fans downward
+            const centerX = W / 2, centerY = H * 0.15;
+
+            // Find max depth
+            let maxDepth = 0;
+            allNodes.forEach(n => { if ((n.depth || 0) > maxDepth) maxDepth = n.depth; });
+
+            // Auto ring spacing — shrink when many nodes so they don't overlap
+            const leafCount = allNodes.filter(n => !n._children || n._children.length === 0).length;
+            const arcAngle = (5 / 6) * Math.PI; // 150 degrees
+
+            // Ring spacing: more generous, adaptive to viewport & node density
+            const maxRingBySpace = Math.min(W, H) * 0.45 / Math.max(maxDepth, 1);
+            const minArcPerLeaf = allNodes.length > 200 ? 8 : allNodes.length > 100 ? 12 : 16;
+            const maxRingByLeaves = (leafCount > 0 && maxDepth > 0)
+                ? (minArcPerLeaf * leafCount) / (arcAngle * maxDepth)
+                : 160;
+            const ringSpacing = Math.min(160, Math.max(35, Math.min(maxRingBySpace, maxRingByLeaves)));
+
+            // 150° arc centered downward (tree fans downward from root at top)
+            const arcStart = Math.PI / 2 - arcAngle / 2;
+            const arcEnd = arcStart + arcAngle;
+
+            // Subtree gap: generous angular spacing between sibling subtrees
+            // Scales with depth — deeper nodes get proportionally more gap for clarity
+            const baseGapAngle = allNodes.length > 200 ? 0.015 : allNodes.length > 80 ? 0.025 : 0.04;
+
+            function countLeaves(node) {
+                if (!node._children || node._children.length === 0) return 1;
+                let sum = 0;
+                node._children.forEach(c => { sum += countLeaves(c); });
+                node._leafCount = sum;
+                return sum;
+            }
+            countLeaves(root);
+
+            function assignPositions(node, angleStart, angleEnd, depth) {
+                const angle = (angleStart + angleEnd) / 2;
+                const r = depth * ringSpacing;
+                node._fx = centerX + Math.cos(angle) * r;
+                node._fy = centerY + Math.sin(angle) * r;
+
+                if (!node._children || node._children.length === 0) return;
+
+                const numChildren = node._children.length;
+                // Gap grows slightly at shallower depths where fans are more visible
+                const gapAngle = baseGapAngle * Math.max(0.5, 1.5 - depth * 0.15);
+                const totalGap = gapAngle * Math.max(0, numChildren - 1);
+                const availableAngle = Math.max((angleEnd - angleStart) - totalGap, 0.01);
+                const totalLeaves = node._children.reduce((s, c) => s + (c._leafCount || 1), 0);
+                let current = angleStart;
+                node._children.forEach((child, i) => {
+                    const childLeaves = child._leafCount || 1;
+                    const childAngleSpan = availableAngle * (childLeaves / totalLeaves);
+                    assignPositions(child, current, current + childAngleSpan, depth + 1);
+                    current += childAngleSpan;
+                    if (i < numChildren - 1) current += gapAngle;
+                });
+            }
+            assignPositions(root, arcStart, arcEnd, 0);
+
+            // Node sizing — smaller overall, adaptive shrink for large trees
+            const n = allNodes.length;
+            const nodeSizeScale = n > 300 ? 0.3 : n > 200 ? 0.38 : n > 100 ? 0.5 : n > 50 ? 0.6 : 0.7;
+            function getRadius(node) {
+                if (node.type === 'root') return 10 * nodeSizeScale;
+                if (node.type === 'title') return 7 * nodeSizeScale;
+                return 4.5 * nodeSizeScale;
+            }
+
+            // Zoom/pan state
+            let viewX = 0, viewY = 0, viewScale = 1;
+            let isPanning = false, panStartX = 0, panStartY = 0, panStartVX = 0, panStartVY = 0;
+
+            // Tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = 'force-graph-tooltip';
+            tooltip.style.display = 'none';
+            wrapper.appendChild(tooltip);
+
+            // SVG
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.classList.add('tree-svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.style.cursor = 'grab';
+            svg.style.background = '#f8fafc';
+
+            // Draw depth arcs (subtle 150° guides)
+            const ringsG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            for (let d = 1; d <= maxDepth; d++) {
+                const r = d * ringSpacing;
+                const x1 = centerX + Math.cos(arcStart) * r;
+                const y1 = centerY + Math.sin(arcStart) * r;
+                const x2 = centerX + Math.cos(arcEnd) * r;
+                const y2 = centerY + Math.sin(arcEnd) * r;
+                const arc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                arc.setAttribute('d', `M${x1},${y1} A${r},${r} 0 0,1 ${x2},${y2}`);
+                arc.setAttribute('fill', 'none');
+                arc.setAttribute('stroke', '#e2e8f0');
+                arc.setAttribute('stroke-width', '0.5');
+                arc.setAttribute('stroke-dasharray', '4 4');
+                arc.setAttribute('opacity', '0.5');
+                ringsG.appendChild(arc);
+            }
+            svg.appendChild(ringsG);
+
+            // Edges — curved paths instead of straight lines
+            const edgesG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            const edgeEls = edges.map(({ source, target }) => {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke', '#cbd5e1');
+                path.setAttribute('stroke-width', '0.8');
+                path.setAttribute('opacity', '0.4');
+                edgesG.appendChild(path);
+                return path;
+            });
+            svg.appendChild(edgesG);
+
+            // Nodes
+            const nodesG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            const nodeEls = allNodes.map((node) => {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.style.cursor = 'pointer';
+                g.setAttribute('transform', `translate(${node._fx}, ${node._fy})`);
+
+                const color = NODE_COLORS[node.type] || '#64748b';
+                const r = getRadius(node);
+
+                const glow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                glow.setAttribute('r', r + 2.5);
+                glow.setAttribute('fill', color);
+                glow.setAttribute('opacity', '0');
+                glow.classList.add('node-glow');
+                g.appendChild(glow);
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('r', r);
+                circle.setAttribute('fill', color);
+                circle.setAttribute('opacity', '0.8');
+                g.appendChild(circle);
+
+                // Hover
+                g.addEventListener('mouseenter', (e) => {
+                    glow.setAttribute('opacity', '0.25');
+                    circle.setAttribute('opacity', '1');
+                    circle.setAttribute('r', r + 1.5);
+                    const typeStr = (node.type || 'node').toUpperCase();
+                    let content = typeStr;
+                    if (node.content) content += ': ' + (node.content.length > 60 ? node.content.substring(0, 60) + '...' : node.content);
+                    else if (node.filename) content += ': ' + node.filename;
+                    tooltip.textContent = content;
+                    tooltip.style.display = 'block';
+                    const rect = wrapper.getBoundingClientRect();
+                    tooltip.style.left = (e.clientX - rect.left + 10) + 'px';
+                    tooltip.style.top = (e.clientY - rect.top - 24) + 'px';
+
+                    // Highlight connected edges
+                    edges.forEach(({ source, target }, i) => {
+                        if (source === node || target === node) {
+                            edgeEls[i].setAttribute('stroke', color);
+                            edgeEls[i].setAttribute('opacity', '0.8');
+                            edgeEls[i].setAttribute('stroke-width', '1.5');
+                        }
+                    });
+                });
+                g.addEventListener('mouseleave', () => {
+                    glow.setAttribute('opacity', '0');
+                    circle.setAttribute('opacity', '0.85');
+                    circle.setAttribute('r', r);
+                    tooltip.style.display = 'none';
+                    edges.forEach((_, i) => {
+                        edgeEls[i].setAttribute('stroke', '#cbd5e1');
+                        edgeEls[i].setAttribute('opacity', '0.5');
+                        edgeEls[i].setAttribute('stroke-width', '0.8');
+                    });
+                });
+
+                g.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showNodeDetail(node, container, wrapper);
+                });
+
+                nodesG.appendChild(g);
+                return g;
+            });
+            svg.appendChild(nodesG);
+
+            wrapper.appendChild(svg);
+            container.appendChild(wrapper);
+
+            // Render edges as curved paths
+            function renderEdges() {
+                edges.forEach(({ source, target }, i) => {
+                    // Quadratic bezier curving toward center
+                    const mx = (source._fx + target._fx) / 2;
+                    const my = (source._fy + target._fy) / 2;
+                    // Pull control point slightly toward center
+                    const cx = mx + (centerX - mx) * 0.2;
+                    const cy = my + (centerY - my) * 0.2;
+                    edgeEls[i].setAttribute('d', `M${source._fx},${source._fy} Q${cx},${cy} ${target._fx},${target._fy}`);
+                });
+            }
+
+            // Auto-fit: compute bounding box of all nodes, then set initial view
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            allNodes.forEach(n => {
+                const r = getRadius(n);
+                if (n._fx - r < minX) minX = n._fx - r;
+                if (n._fy - r < minY) minY = n._fy - r;
+                if (n._fx + r > maxX) maxX = n._fx + r;
+                if (n._fy + r > maxY) maxY = n._fy + r;
+            });
+            const padding = 40;
+            const fitX = minX - padding, fitY = minY - padding;
+            const fitW = (maxX - minX) + padding * 2, fitH = (maxY - minY) + padding * 2;
+            // Initial offset/scale to fit all nodes
+            const fitScaleX = W / fitW, fitScaleY = H / fitH;
+            let initScale = Math.min(fitScaleX, fitScaleY, 2);
+            let initOffsetX = (W / 2) - (fitX + fitW / 2) * initScale;
+            let initOffsetY = (H / 2) - (fitY + fitH / 2) * initScale;
+
+            function applyView() {
+                const effScale = viewScale * initScale;
+                const effX = viewX + initOffsetX;
+                const effY = viewY + initOffsetY;
+                const vbX = -effX / effScale;
+                const vbY = -effY / effScale;
+                const vbW = W / effScale;
+                const vbH = H / effScale;
+                svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+            }
+
+            renderEdges();
+            applyView();
+
+            // Pan
+            svg.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                isPanning = true;
+                panStartX = e.clientX;
+                panStartY = e.clientY;
+                panStartVX = viewX;
+                panStartVY = viewY;
+                svg.style.cursor = 'grabbing';
+                e.preventDefault();
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!isPanning) return;
+                viewX = panStartVX + (e.clientX - panStartX);
+                viewY = panStartVY + (e.clientY - panStartY);
+                applyView();
+            });
+            document.addEventListener('mouseup', () => {
+                if (isPanning) { isPanning = false; svg.style.cursor = 'grab'; }
+            });
+
+            // Zoom
+            svg.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                viewScale = Math.max(0.2, Math.min(5, viewScale * delta));
+                applyView();
+            }, { passive: false });
+
+            // Dismiss popup on svg click
+            svg.addEventListener('click', () => {
+                const existing = container.querySelector('.tree-detail-popup');
+                if (existing) existing.remove();
+            });
+
+            function resetView() {
+                viewX = 0; viewY = 0; viewScale = 1;
+                applyView();
+            }
+
+            return { wrapper, resetView, destroy: () => {} };
         }
 
         function showNodeDetail(node, container, wrapper) {
@@ -1027,26 +1489,54 @@
             treeViewer.style.display = 'block';
             treeViewer.innerHTML = '';
 
-            const statsBar = document.createElement('div');
-            statsBar.className = 'tree-stats';
-            statsBar.innerHTML = `
-                <span><strong>File:</strong> ${treeData.meta_dict.file_name}</span>
-                <span><strong>Nodes:</strong> ${treeData.nodes_count}</span>
-                <button class="tree-view-btn" id="treeViewBtn" title="View full screen">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                    View
+            // Count nodes by type
+            const typeCounts = {};
+            let maxDepth = 0;
+            (treeData.tree_structure || []).forEach(n => {
+                const t = n.type || 'node';
+                typeCounts[t] = (typeCounts[t] || 0) + 1;
+                if ((n.depth || 0) > maxDepth) maxDepth = n.depth;
+            });
+
+            // Stats-only panel
+            const panel = document.createElement('div');
+            panel.className = 'tree-stats-panel';
+
+            let legendHtml = '';
+            Object.entries(typeCounts).forEach(([type, count]) => {
+                const color = NODE_COLORS[type] || '#64748b';
+                legendHtml += `<div class="tree-stat-row">
+                    <span class="tree-legend-dot" style="background:${color}"></span>
+                    <span class="tree-stat-type">${type}</span>
+                    <span class="tree-stat-value">${count}</span>
+                </div>`;
+            });
+
+            panel.innerHTML = `
+                <div class="tree-stats-header">
+                    <span class="tree-stats-filename" title="${escapeHtml(treeData.meta_dict.file_name)}">${escapeHtml(treeData.meta_dict.file_name)}</span>
+                </div>
+                <div class="tree-stats-summary">
+                    <div class="tree-stat-chip">
+                        <span class="tree-stat-chip-value">${treeData.nodes_count}</span>
+                        <span class="tree-stat-chip-label">Nodes</span>
+                    </div>
+                    <div class="tree-stat-chip">
+                        <span class="tree-stat-chip-value">${maxDepth}</span>
+                        <span class="tree-stat-chip-label">Depth</span>
+                    </div>
+                    <div class="tree-stat-chip">
+                        <span class="tree-stat-chip-value">${Object.keys(typeCounts).length}</span>
+                        <span class="tree-stat-chip-label">Types</span>
+                    </div>
+                </div>
+                <div class="tree-stats-breakdown">${legendHtml}</div>
+                <button class="tree-graph-btn" id="treeViewBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><circle cx="19" cy="6" r="2"/><path d="M5 8v2a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4V8"/><line x1="12" y1="14" x2="12" y2="16"/></svg>
+                    View Graph
                 </button>
             `;
-            treeViewer.appendChild(statsBar);
-
-            const root = buildTreeStructure(treeData.tree_structure);
-            if (!root) {
-                treeViewer.innerHTML += '<div class="tree-empty">No tree structure available</div>';
-                return;
-            }
-
-            const cfg = { nodeW: 100, nodeH: 36, hGap: 12, vGap: 40 };
-            renderTreeSVG(root, treeViewer, cfg, false);
+            treeViewer.appendChild(panel);
 
             document.getElementById('treeViewBtn').addEventListener('click', () => {
                 openTreeModal(treeData);
@@ -1314,10 +1804,22 @@
             });
         }
 
-        // Full-screen modal with zoom/pan and collapse controls
+        // Full-screen modal with force-directed graph
         function openTreeModal(treeData) {
             const old = document.getElementById('treeModal');
             if (old) old.remove();
+
+            // Count types for legend
+            const typeCounts = {};
+            (treeData.tree_structure || []).forEach(n => {
+                const t = n.type || 'node';
+                typeCounts[t] = (typeCounts[t] || 0) + 1;
+            });
+            let legendHtml = '';
+            Object.entries(typeCounts).forEach(([type, count]) => {
+                const color = NODE_COLORS[type] || '#64748b';
+                legendHtml += `<span class="tree-legend-item"><span class="tree-legend-dot" style="background:${color}"></span>${type} <span class="tree-legend-count">${count}</span></span>`;
+            });
 
             const modal = document.createElement('div');
             modal.id = 'treeModal';
@@ -1327,33 +1829,18 @@
                     <div class="tree-modal-header">
                         <h3>Document Tree \u2014 ${escapeHtml(treeData.meta_dict.file_name)}</h3>
                         <div class="tree-modal-toolbar">
-                            <div class="tree-toolbar-group">
-                                <button class="tree-toolbar-btn" id="tmZoomIn" title="Zoom in">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-                                </button>
-                                <span class="tree-zoom-label" id="tmZoomLabel">100%</span>
-                                <button class="tree-toolbar-btn" id="tmZoomOut" title="Zoom out">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-                                </button>
-                                <button class="tree-toolbar-btn" id="tmZoomReset" title="Reset zoom">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                                </button>
-                            </div>
+                            <div class="tree-toolbar-group tree-modal-legend">${legendHtml}</div>
                             <div class="tree-toolbar-divider"></div>
                             <div class="tree-toolbar-group">
-                                <button class="tree-toolbar-btn" id="tmExpandAll" title="Expand all">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-                                    Expand
-                                </button>
-                                <button class="tree-toolbar-btn" id="tmCollapseAll" title="Collapse all">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
-                                    Collapse
+                                <button class="tree-toolbar-btn" id="tmResetView" title="Reset view">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                    Reset
                                 </button>
                             </div>
                         </div>
                         <button class="tree-modal-close">&times;</button>
                     </div>
-                    <div class="tree-modal-body"></div>
+                    <div class="tree-modal-body tree-modal-graph-body"></div>
                 </div>
             `;
             document.body.appendChild(modal);
@@ -1361,81 +1848,32 @@
             const freshNodes = JSON.parse(JSON.stringify(treeData.tree_structure));
             const root = buildTreeStructure(freshNodes);
             const body = modal.querySelector('.tree-modal-body');
-            let treeResult = null;
+            let graphResult = null;
 
             if (root) {
-                const cfg = { nodeW: 160, nodeH: 48, hGap: 24, vGap: 70 };
-                treeResult = renderTreeSVG(root, body, cfg, true);
+                graphResult = renderRadialTree(root, body);
             }
 
-            let scale = 1;
-            const SCALE_STEP = 0.15;
-            const MIN_SCALE = 0.2;
-            const MAX_SCALE = 3;
-            const zoomLabel = modal.querySelector('#tmZoomLabel');
-
-            function applyZoom() {
-                if (!treeResult) return;
-                const svg = treeResult.wrapper.querySelector('svg');
-                if (svg) {
-                    svg.style.transform = `scale(${scale})`;
-                    svg.style.transformOrigin = 'top left';
-                }
-                zoomLabel.textContent = Math.round(scale * 100) + '%';
-            }
-
-            modal.querySelector('#tmZoomIn').addEventListener('click', () => {
-                scale = Math.min(MAX_SCALE, scale + SCALE_STEP);
-                applyZoom();
-            });
-            modal.querySelector('#tmZoomOut').addEventListener('click', () => {
-                scale = Math.max(MIN_SCALE, scale - SCALE_STEP);
-                applyZoom();
-            });
-            modal.querySelector('#tmZoomReset').addEventListener('click', () => {
-                scale = 1;
-                applyZoom();
-                scrollToRoot();
+            modal.querySelector('#tmResetView').addEventListener('click', () => {
+                if (graphResult) graphResult.resetView();
             });
 
-            function scrollToRoot() {
-                if (!treeResult || !root) return;
-                const svg = treeResult.wrapper.querySelector('svg');
-                if (!svg) return;
-                const rootCenterX = root._x * scale;
-                const bodyW = body.clientWidth;
-                body.scrollLeft = Math.max(0, rootCenterX - bodyW / 2);
-                body.scrollTop = 0;
-            }
-
-            requestAnimationFrame(() => scrollToRoot());
-
-            function setCollapseAll(node, collapsed) {
-                if (node._children && node._children.length > 0) {
-                    node._collapsed = collapsed;
-                    node._children.forEach(c => setCollapseAll(c, collapsed));
-                }
-            }
-
-            modal.querySelector('#tmExpandAll').addEventListener('click', () => {
-                if (root) { setCollapseAll(root, false); if (treeResult) treeResult.redraw(); applyZoom(); scrollToRoot(); }
+            modal.querySelector('.tree-modal-close').addEventListener('click', () => {
+                if (graphResult) graphResult.destroy();
+                modal.remove();
             });
-            modal.querySelector('#tmCollapseAll').addEventListener('click', () => {
-                if (root) {
-                    root._collapsed = false;
-                    if (root._children) root._children.forEach(c => setCollapseAll(c, true));
-                    if (treeResult) treeResult.redraw();
-                    applyZoom();
-                    scrollToRoot();
-                }
-            });
-
-            modal.querySelector('.tree-modal-close').addEventListener('click', () => modal.remove());
             modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.remove();
+                if (e.target === modal) {
+                    if (graphResult) graphResult.destroy();
+                    modal.remove();
+                }
             });
             const escHandler = (e) => {
-                if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', escHandler); }
+                if (e.key === 'Escape') {
+                    if (graphResult) graphResult.destroy();
+                    modal.remove();
+                    document.removeEventListener('keydown', escHandler);
+                }
             };
             document.addEventListener('keydown', escHandler);
 

@@ -213,6 +213,10 @@
                         <div class="mini-card-value" id="miniDocTreeVal">0</div>
                         <div class="mini-card-label">Tree</div>
                     </div>
+                    <div class="result-mini-card" id="miniSemantic">
+                        <div class="mini-card-value" id="miniSemanticVal">0</div>
+                        <div class="mini-card-label">Semantic</div>
+                    </div>
                     <div class="result-mini-card" id="miniHyperedge">
                         <div class="mini-card-value" id="miniHyperedgeVal">0</div>
                         <div class="mini-card-label">Hyper</div>
@@ -226,11 +230,16 @@
                 <!-- Per-doc breakdown -->
                 <div class="right-doc-list" id="rightDocList"></div>
 
-                <!-- Token usage -->
+                <!-- Filter token usage -->
+                <div class="index-tokens-title" style="margin-bottom:6px;">Token Cost</div>
                 <div class="token-usage-bar">
                     <div class="token-item">
                         <span class="token-label">Tree</span>
                         <span class="token-value" id="rightDocTokens">—</span>
+                    </div>
+                    <div class="token-item">
+                        <span class="token-label">Semantic</span>
+                        <span class="token-value" id="rightSemanticTokens">—</span>
                     </div>
                     <div class="token-item">
                         <span class="token-label">Hyper</span>
@@ -239,6 +248,25 @@
                     <div class="token-item">
                         <span class="token-label">Combined</span>
                         <span class="token-value" id="rightCombinedTokens">—</span>
+                    </div>
+                </div>
+
+                <!-- Index Construction Tokens -->
+                <div class="index-tokens-section" id="indexTokensSection" style="display:none;">
+                    <div class="index-tokens-title">Index Construction Tokens</div>
+                    <div class="token-usage-bar">
+                        <div class="token-item">
+                            <span class="token-label">Doc Tree</span>
+                            <span class="token-value" id="idxDocTreeTokens">—</span>
+                        </div>
+                        <div class="token-item">
+                            <span class="token-label">Semantic</span>
+                            <span class="token-value" id="idxSemanticTokens">—</span>
+                        </div>
+                        <div class="token-item">
+                            <span class="token-label">Hyperedge</span>
+                            <span class="token-value" id="idxHyperedgeTokens">—</span>
+                        </div>
                     </div>
                 </div>
             </div>
