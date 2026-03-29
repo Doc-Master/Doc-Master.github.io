@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DocMaster: LLM-Powered Document-Level Filtering</title>
+    <title>DocMaster: A Hierarchical Structure-Aware System for Document Analysis</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -16,13 +16,10 @@
     <section class="hero">
         <div class="hero-inner">
             <div class="hero-badge">VLDB 2026 &mdash; Demo Track</div>
-            <h1>DocMaster: LLM-Powered Document-Level Filtering for Database Systems</h1>
+            <h1>DocMaster: A Hierarchical Structure-Aware System for Document Analysis</h1>
             <p class="hero-abstract">
-                We present <strong>DocMaster</strong>, a novel semantic filter operator for database query pipelines.
-                Given a natural-language condition, the system builds indexes among multiple documents, filters out
-                target documents based on user queries, and provides comprehensive analysis &mdash; all without
-                reading every document in full &mdash; by combining hierarchical document tree traversal with
-                hyperedge-based semantic retrieval.
+                We present <strong>DocMaster</strong>, a hierarchical structure-aware document analysis system. 
+                DocMaster parses documents into hierarchical document trees preserving original layouts and constructs a structure-aware semantic index that enables accurate document filtering and in-depth analysis.
             </p>
             <div class="hero-actions">
                 <a href="demo.html" class="btn-primary">Try the Live Demo</a>
@@ -37,7 +34,7 @@
             <div class="section-header">
                 <div class="section-label">Capabilities</div>
                 <h2 class="section-title">Key Features</h2>
-                <p class="section-desc">DocMaster combines structural and semantic analysis to deliver efficient, accurate document-level filtering.</p>
+                <p class="section-desc">DocMaster combines structural and semantic analysis to deliver efficient, accurate document analysis.</p>
             </div>
             <div class="overview-grid">
                 <div class="overview-card">
@@ -80,7 +77,7 @@
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                     </div>
                     <h3>Multi-Document Collections</h3>
-                    <p>Upload an entire collection of PDFs. The system processes, indexes, and evaluates the filter condition across all documents in a single query.</p>
+                    <p>Upload an entire collection of documents. The system processes, indexes, and evaluates the filter condition across all documents in a single query.</p>
                 </div>
             </div>
         </div>
@@ -95,39 +92,46 @@
                 <p class="section-desc">From document ingestion to semantic filtering and RAG-powered analysis.</p>
             </div>
             <div class="figure-gallery">
-                <div class="figure-card">
-                    <div class="figure-placeholder" id="fig-workflow">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="16" cy="18" r="1.5" fill="currentColor"/></svg>
-                        <p>Workflow Pipeline Figure</p>
-                        <span class="figure-placeholder-hint">Image will be inserted here</span>
-                    </div>
-                    <div class="figure-caption">
+                  <div class="figure-card">
+                    <figure class="figure">
+                      <img
+                        src="figures/workflow.png"
+                        alt="Workflow pipeline of DocMaster"
+                        loading="lazy"
+                      />
+                      <figcaption class="figure-caption">
                         <h4>Workflow Pipeline</h4>
                         <p>End-to-end flow from PDF upload through parsing, indexing, filtering, to RAG Q&amp;A output.</p>
-                    </div>
-                </div>
-                <div class="figure-card">
-                    <div class="figure-placeholder" id="fig-index">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                        <p>Index Construction Figure</p>
-                        <span class="figure-placeholder-hint">Image will be inserted here</span>
-                    </div>
-                    <div class="figure-caption">
+                      </figcaption>
+                    </figure>
+                  </div>
+                  <div class="figure-card">
+                    <figure class="figure">
+                      <img
+                        src="figures/index.png"
+                        alt="Index construction pipeline"
+                        loading="lazy"
+                      />
+                      <figcaption class="figure-caption">
                         <h4>Index Construction</h4>
                         <p>Document tree building, PC-KMeans clustering, and hyperedge extraction pipeline.</p>
-                    </div>
-                </div>
-                <div class="figure-card">
-                    <div class="figure-placeholder" id="fig-demo">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-                        <p>Demo System Layout Figure</p>
-                        <span class="figure-placeholder-hint">Image will be inserted here</span>
-                    </div>
-                    <div class="figure-caption">
+                      </figcaption>
+                    </figure>
+                  </div>
+                
+                  <div class="figure-card">
+                    <figure class="figure">
+                      <img
+                        src="/figures/demo.png"
+                        alt="Demo system layout"
+                        loading="lazy"
+                      />
+                      <figcaption class="figure-caption">
                         <h4>Demo System Layout</h4>
                         <p>Two-column interface with document management on the left and filtering/chat on the right.</p>
-                    </div>
-                </div>
+                      </figcaption>
+                    </figure>
+                  </div>
             </div>
         </div>
     </section>
