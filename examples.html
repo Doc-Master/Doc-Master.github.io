@@ -507,12 +507,13 @@
 
     /* ── Typing effect ── */
     function typeInto(el, text, speed, cb) {
+        clearTimeout(el._typingTimer);
         el.textContent = '';
         el.classList.add('typing');
         const chars = getDisplayChars(text || '');
         let i = 0;
         (function next() {
-            if (i < chars.length) { el.textContent += chars[i++]; setTimeout(next, speed); }
+            if (i < chars.length) { el.textContent += chars[i++]; el._typingTimer = setTimeout(next, speed); }
             else { el.classList.remove('typing'); if (cb) cb(); }
         })();
     }
@@ -538,27 +539,37 @@
     function animateUC(i) {
         const panel = document.getElementById(`uc-${i}`);
         if (!panel) return;
+        clearPanelTimers(panel);
+
+        function schedule(fn, delay) {
+            const timer = setTimeout(fn, delay);
+            panel._ucTimers.push(timer);
+        }
 
         // Reset
         panel.querySelectorAll('.uc-col, .uc-strat-card, .uc-doc, .uc-doc-more, .uc-obs, .uc-qa-msg')
              .forEach(el => el.classList.remove('visible'));
         panel.querySelectorAll('.uc-strat-val').forEach(el => el.textContent = '0');
         const qBox = panel.querySelector('.uc-query-box');
-        if (qBox) { qBox.textContent = ''; qBox.classList.remove('typing'); }
+        if (qBox) {
+            clearTimeout(qBox._typingTimer);
+            qBox.textContent = '';
+            qBox.classList.remove('typing');
+        }
 
         const filterCol = panel.querySelector(`#uc${i}-filter`);
         const qaCol     = panel.querySelector(`#uc${i}-qa`);
 
         // T=200ms  — Show filter column + start typing
-        setTimeout(() => {
+        schedule(() => {
             filterCol.classList.add('visible');
             typeInto(qBox, qBox.getAttribute('data-text'), 22);
         }, 200);
 
         // T=2200ms — Strategy cards count up
-        setTimeout(() => {
+        schedule(() => {
             panel.querySelectorAll('.uc-strat-card').forEach((card, j) => {
-                setTimeout(() => {
+                schedule(() => {
                     card.classList.add('visible');
                     const v = card.querySelector('.uc-strat-val');
                     countUp(v, parseInt(v.getAttribute('data-target')), 700);
@@ -567,28 +578,33 @@
         }, 2200);
 
         // T=3000ms — Document list
-        setTimeout(() => {
+        schedule(() => {
             panel.querySelectorAll('.uc-doc').forEach((d, j) => {
-                setTimeout(() => d.classList.add('visible'), j * 90);
+                schedule(() => d.classList.add('visible'), j * 90);
             });
         }, 3000);
 
         // T=3600ms — More indicator + observation
-        setTimeout(() => {
+        schedule(() => {
             const more = panel.querySelector('.uc-doc-more');
             if (more) more.classList.add('visible');
         }, 3600);
-        setTimeout(() => {
+        schedule(() => {
             const obs = panel.querySelector('.uc-obs');
             if (obs) obs.classList.add('visible');
         }, 3900);
 
         // T=4200ms — Q&A column
-        setTimeout(() => {
+        schedule(() => {
             qaCol.classList.add('visible');
-            setTimeout(() => panel.querySelector(`#uc${i}-q`)?.classList.add('visible'), 200);
-            setTimeout(() => panel.querySelector(`#uc${i}-a`)?.classList.add('visible'), 700);
+            schedule(() => panel.querySelector(`#uc${i}-q`)?.classList.add('visible'), 200);
+            schedule(() => panel.querySelector(`#uc${i}-a`)?.classList.add('visible'), 700);
         }, 4200);
+    }
+
+    function clearPanelTimers(panel) {
+        (panel._ucTimers || []).forEach(clearTimeout);
+        panel._ucTimers = [];
     }
 
     /* ── Init ── */
