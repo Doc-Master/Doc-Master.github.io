@@ -51,7 +51,7 @@
                 <p class="footer-desc">A semantic filter operator for database systems using LLM-guided document tree traversal and hyperedge-based retrieval.</p>
                 <hr class="footer-divider">
                 <div class="footer-bottom">
-                    <p>Submitted to <strong>VLDB 2026 Demo Track</strong></p>
+                    <p><strong>Research Demo Paper</strong></p>
                     <p>&copy; 2026 All rights reserved.</p>
                 </div>
             </div>
