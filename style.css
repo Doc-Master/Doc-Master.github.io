@@ -195,6 +195,18 @@ nav {
     flex-wrap: wrap;
 }
 
+.hero-note {
+    max-width: 680px;
+    margin: 20px auto 0;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+.hero-note a {
+    color: var(--primary);
+    font-weight: 600;
+}
+
 .btn-primary, .btn-outline {
     display: inline-flex;
     align-items: center;
